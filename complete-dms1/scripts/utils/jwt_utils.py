@@ -37,7 +37,7 @@ def decode_access_token(token: str) -> TokenData:
         if username is None or role is None:
             raise JWTError("Missing username or role in token.")
 
-        return TokenData(username=username, role=role)
+        return TokenData(username=username, role=role, access_token=token)
 
     except ExpiredSignatureError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=TOKEN_EXPIRED)

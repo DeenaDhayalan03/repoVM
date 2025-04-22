@@ -10,6 +10,7 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     username: str = Field(..., description="The username of the authenticated user")
     role: str = Field(..., description="The role of the authenticated user")
+    access_token: str
 
 
 class UserSignupRequest(BaseModel):

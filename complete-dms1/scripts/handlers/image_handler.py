@@ -23,6 +23,9 @@ def is_valid_docker_tag(tag: str) -> bool:
 
 def build_image(data: ImageBuildRequest, token: str = Depends(oauth2_scheme)):
     try:
+        user = get_current_user_from_token(token)
+        user_id = user.username
+
         build_args = data.dict(exclude_unset=True)
 
         if not build_args.get("path") and not build_args.get("fileobj"):
@@ -34,9 +37,6 @@ def build_image(data: ImageBuildRequest, token: str = Depends(oauth2_scheme)):
                 raise HTTPException(status_code=400, detail=INVALID_REQUEST)
         else:
             build_args["tag"] = settings.DEFAULT_DOCKER_TAG
-
-        user = get_current_user_from_token(token)
-        user_id = user.username
 
         image, _ = client.images.build(**build_args)
 

@@ -37,7 +37,7 @@ class ImageHandler:
 
             tag = build_args.get("tag")
             if tag:
-                if not DockerImageHandler.is_valid_docker_tag(tag):
+                if not ImageHandler.is_valid_docker_tag(tag):
                     raise HTTPException(status_code=400, detail=INVALID_REQUEST)
             else:
                 build_args["tag"] = settings.DEFAULT_DOCKER_TAG

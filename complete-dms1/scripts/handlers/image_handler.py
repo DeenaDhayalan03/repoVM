@@ -21,7 +21,7 @@ oauth2_scheme = None #OAuth2PasswordBearer(tokenUrl=Endpoints.AUTH_LOGIN)
 def is_valid_docker_tag(tag: str) -> bool:
     return bool(re.match(r"^[a-z0-9]+([._-]?[a-z0-9]+)*(\/[a-z0-9]+([._-]?[a-z0-9]+)*)*(\:[a-zA-Z0-9_.-]+)?$", tag))
 
-def build_image(data: ImageBuildRequest, token: str = Depends(oauth2_scheme)):
+def build_image(data: ImageBuildRequest, token: str):
     try:
         user = get_current_user_from_token(token)
         user_id = user.username

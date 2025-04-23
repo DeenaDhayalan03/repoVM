@@ -47,7 +47,7 @@ def build_image(data: ImageBuildRequest, token: str = Depends(oauth2_scheme)):
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=IMAGE_BUILD_FAILURE)
+        raise HTTPException(status_code=500, detail=f"{IMAGE_BUILD_FAILURE}: {str(e)}")
 
 def build_image_from_github(data: ImageGithubBuildRequest, token: str = Depends(oauth2_scheme)):
     try:

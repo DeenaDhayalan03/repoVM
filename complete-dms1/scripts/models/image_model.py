@@ -9,7 +9,7 @@ class ImageGithubBuildRequest(BaseModel):
 
 class ImageBuildRequest(BaseModel):
     path: Optional[str] = None
-    fileobj: Optional[Any] = None
+    fileobj: Optional[str] = None
     tag: Optional[str] = None
     quiet: Optional[bool] = False
     nocache: Optional[bool] = False

@@ -23,8 +23,8 @@ def is_valid_docker_tag(tag: str) -> bool:
 
 def build_image(data: ImageBuildRequest, token: str):
     try:
-        # user = get_current_user_from_token(token)
-        # user_id = user.username
+        user = get_current_user_from_token(token)
+        user_id = user.username
 
         build_args = data.dict(exclude_unset=True)
 
@@ -38,7 +38,16 @@ def build_image(data: ImageBuildRequest, token: str):
         else:
             build_args["tag"] = settings.DEFAULT_DOCKER_TAG
 
-        image, _ = client.images.build(**build_args)
+        if isinstance(build_args.get("fileobj"), str):
+            file_path = build_args["fileobj"]
+            try:
+                with open(file_path, "rb") as f:
+                    build_args["fileobj"] = f
+                    image, _ = client.images.build(**build_args)
+            except FileNotFoundError:
+                raise HTTPException(status_code=400, detail=f"Dockerfile not found at path: {file_path}")
+        else:
+         image, _ = client.images.build(**build_args)
 
         return {
             "message": IMAGE_BUILD_SUCCESS.format(tag=build_args['tag']),
@@ -53,7 +62,7 @@ def build_image_from_github(data: ImageGithubBuildRequest, token: str = Depends(
     try:
         temp_dir = tempfile.mkdtemp()
         repo_url = data.github_url
-        repo_name = repo_url.split("/")[-1].replace(".git", "")  # Extract repo name
+        repo_name = repo_url.split("/")[-1].replace(".git", "")
         dockerfile_path = data.dockerfile_path
 
         git.Repo.clone_from(repo_url, temp_dir)

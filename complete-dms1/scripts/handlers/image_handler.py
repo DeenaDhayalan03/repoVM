@@ -23,8 +23,8 @@ def is_valid_docker_tag(tag: str) -> bool:
 
 def build_image(data: ImageBuildRequest, token: str):
     try:
-        user = get_current_user_from_token(token)
-        user_id = user.username
+        # user = get_current_user_from_token(token)
+        # user_id = user.username
 
         build_args = data.dict(exclude_unset=True)
 

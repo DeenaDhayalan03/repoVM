@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException
+import json
+from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import Optional
 from scripts.models.image_model import ImageBuildRequest, ImageRemoveRequest, ImageGithubBuildRequest
 from scripts.constants.api_endpoints import Endpoints
@@ -32,10 +33,13 @@ def build_image_from_github_service(data: ImageGithubBuildRequest, current_user:
         raise HTTPException(status_code=500, detail="Error building image from GitHub repository")
 
 @image_router.get(Endpoints.IMAGE_LIST)
-def list_images_service(name: str = None, all: bool = False, filters: Optional[dict] = None, current_user: TokenData = Depends(get_current_user)):
+def list_images_service(name: str = None, all: bool = False, filters: Optional[str] = Query(default=None), current_user: TokenData = Depends(get_current_user)):
     try:
-        logger.info(f"User '{current_user.username}' is listing Docker images with filters: {filters}")
-        return ImageHandler.list_images(name, all, filters, current_user)
+        filters_dict = json.loads(filters) if filters else None
+        logger.info(f"User '{current_user.username}' is listing Docker images with filters: {filters_dict}")
+        return ImageHandler.list_images(name, all, filters_dict, current_user)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON in filters")
     except Exception as e:
         logger.error(f"Error listing Docker images with filters {filters}: {e}")
         raise HTTPException(status_code=500, detail="Error listing Docker images")

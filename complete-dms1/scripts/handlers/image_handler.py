@@ -2,7 +2,7 @@ import docker
 import re
 import os
 import tempfile
-from fastapi import HTTPException, Depends
+from fastapi import HTTPException, Depends, Query
 from typing import Dict, Any
 from pip._internal.vcs import git
 from scripts.models.image_model import ImageBuildRequest, ImageRemoveRequest, ImageGithubBuildRequest

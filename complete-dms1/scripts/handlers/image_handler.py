@@ -117,7 +117,7 @@ class ImageHandler:
 
 
     @staticmethod
-    def list_images(current_user: TokenData, name: str = None, all: bool = False):
+    def list_images(name: str = None, all: bool = False, current_user: TokenData=None):
         try:
             user_id = current_user.username
 
@@ -135,7 +135,7 @@ class ImageHandler:
             }
 
         except Exception as e:
-            raise HTTPException(status_code=500, detail=IMAGE_LIST_RETRIEVED)
+            raise HTTPException(status_code=500, detail=IMAGE_LIST_FAILURE)
 
 
     @staticmethod

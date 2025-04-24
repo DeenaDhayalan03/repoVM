@@ -39,6 +39,8 @@ IMAGE_REMOVE_FAILURE = "Failed to remove Docker image."
 IMAGE_NOT_FOUND = "Requested image not found."
 IMAGE_LIST_SUCCESS = "Docker images listed successfully."
 IMAGE_LIST_RETRIEVED = "List of Docker images retrieved successfully."
+IMAGE_LIST_FAILURE = "Failed to retrieve Docker images."
+
 
 CONTAINER_CREATE_SUCCESS = "Docker container created successfully."
 CONTAINER_CREATE_FAILURE = "Failed to create Docker container."

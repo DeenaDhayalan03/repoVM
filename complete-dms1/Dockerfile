@@ -4,9 +4,16 @@ WORKDIR /app
 
 COPY . /app
 
-RUN apt-get update && apt-get install -y gcc libffi-dev libssl-dev build-essential
-
-RUN pip install --no-cache-dir -r requirements.txt || (echo "Error with pip install" && cat /root/.pip/pip.log)
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libssl-dev \
+    libffi-dev \
+    python3-dev \
+    libpq-dev \
+    libcurl4-openssl-dev \
+    libjpeg-dev
+    
+RUN pip install --no-cache-dir -r requirements.txt | tee /tmp/pip_install.log || (echo "Error with pip install" && cat /tmp/pip_install.log)
 
 EXPOSE 8000
 

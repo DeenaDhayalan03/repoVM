@@ -44,25 +44,22 @@ class ImageHandler:
             else:
                 build_args["tag"] = settings.DEFAULT_DOCKER_TAG
 
-            # Handle fileobj if it exists
             if build_args.get("fileobj"):
-                file_path = build_args.pop("fileobj")  # Remove it from build_args
+                file_path = build_args.pop("fileobj")
                 try:
                     with open(file_path, "rb") as f:
-                        build_args["fileobj"] = f  # Pass the file object to Docker
+                        build_args["fileobj"] = f
                         image, _ = client.images.build(**build_args)
                 except FileNotFoundError:
                     raise HTTPException(status_code=400, detail=f"Dockerfile not found at path: {file_path}")
                 except IsADirectoryError:
                     raise HTTPException(status_code=400, detail=f"{file_path} is a directory, not a file.")
             else:
-                # Handle path (directory) build context
                 path = build_args.get("path")
                 if path:
-                    # Ensure the path is a directory, as Docker expects a build context (folder)
                     if not os.path.isdir(path):
                         raise HTTPException(status_code=400, detail=f"{path} is not a valid directory.")
-                    build_args["path"] = path  # Use directory as build context
+                    build_args["path"] = path
                     image, _ = client.images.build(**build_args)
                 else:
                     raise HTTPException(status_code=400, detail="Either 'fileobj' or 'path' must be provided.")
@@ -77,7 +74,7 @@ class ImageHandler:
             raise HTTPException(status_code=500, detail=f"{IMAGE_BUILD_FAILURE}: {str(e)}")
 
     @staticmethod
-    def build_image_from_github(data: ImageGithubBuildRequest, token: str = Depends(oauth2_scheme)):
+    def build_image_from_github(data: ImageGithubBuildRequest, current_user: TokenData):
         try:
             temp_dir = tempfile.mkdtemp()
             repo_url = data.github_url
@@ -96,8 +93,7 @@ class ImageHandler:
                 "tag": data.tag
             }
 
-            user = get_current_user_from_token(token)
-            user_id = user.username
+            user_id = current_user.username
 
             image, _ = client.images.build(**build_args)
 
@@ -120,10 +116,9 @@ class ImageHandler:
             raise HTTPException(status_code=500, detail=IMAGE_BUILD_FAILURE)
 
     @staticmethod
-    def list_images(name: str = None, all: bool = False, filters: Dict[str, Any] = None, token: str = Depends(oauth2_scheme)):
+    def list_images(current_user: TokenData, name: str = None, all: bool = False, filters: Dict[str, Any] = None):
         try:
-            user = get_current_user_from_token(token)
-            user_id = user.username
+            user_id = current_user.username
 
             kwargs = {}
             if name is not None:
@@ -144,10 +139,10 @@ class ImageHandler:
             raise HTTPException(status_code=500, detail=IMAGE_LIST_RETRIEVED)
 
     @staticmethod
-    def dockerhub_login(username: str, password: str, token: str = Depends(oauth2_scheme)):
+    def dockerhub_login(username: str, password: str, current_user: TokenData):
         try:
-            user = get_current_user_from_token(token)
-            user_id = user.username
+            user_id = current_user.username
+
 
             client.login(username=username, password=password)
             return {"message": AUTH_LOGIN_SUCCESS}
@@ -155,10 +150,10 @@ class ImageHandler:
             raise HTTPException(status_code=401, detail=AUTH_LOGIN_FAILURE)
 
     @staticmethod
-    def push_image(local_tag: str, remote_repo: str, token: str = Depends(oauth2_scheme)):
+    def push_image(local_tag: str, remote_repo: str, current_user: TokenData):
         try:
-            user = get_current_user_from_token(token)
-            user_id = user.username
+            user_id = current_user.username
+
 
             image = client.images.get(local_tag)
             image.tag(remote_repo)
@@ -176,10 +171,9 @@ class ImageHandler:
             raise HTTPException(status_code=500, detail=IMAGE_PUSH_FAILURE)
 
     @staticmethod
-    def pull_image(repository: str, local_tag: str = None, token: str = Depends(oauth2_scheme)):
+    def pull_image(repository: str, current_user: TokenData, local_tag: str = None):
         try:
-            user = get_current_user_from_token(token)
-            user_id = user.username
+            user_id = current_user.username
 
             image = client.images.pull(repository)
 
@@ -200,10 +194,9 @@ class ImageHandler:
             raise HTTPException(status_code=500, detail=IMAGE_PULL_FAILURE)
 
     @staticmethod
-    def remove_image(image_name: str, params: ImageRemoveRequest, token: str = Depends(oauth2_scheme)):
+    def remove_image(image_name: str, params: ImageRemoveRequest, current_user: TokenData):
         try:
-            user = get_current_user_from_token(token)
-            user_id = user.username
+            user_id = current_user.username
 
             opts = params.dict(exclude_unset=True)
             client.images.remove(image=image_name, **opts)

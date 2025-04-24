@@ -44,16 +44,26 @@ class ImageHandler:
             else:
                 build_args["tag"] = settings.DEFAULT_DOCKER_TAG
 
-            if isinstance(build_args.get("fileobj"), str):
-                file_path = build_args["fileobj"]
+            # Handle fileobj if it exists
+            if build_args.get("fileobj"):
+                file_path = build_args.pop("fileobj")  # Remove it from build_args
                 try:
                     with open(file_path, "rb") as f:
-                        build_args["fileobj"] = f
+                        build_args["fileobj"] = f  # Pass the file object to Docker
                         image, _ = client.images.build(**build_args)
                 except FileNotFoundError:
                     raise HTTPException(status_code=400, detail=f"Dockerfile not found at path: {file_path}")
+                except IsADirectoryError:
+                    raise HTTPException(status_code=400, detail=f"{file_path} is a directory, not a file.")
             else:
-                image, _ = client.images.build(**build_args)
+                # Handle path (directory) build context
+                path = build_args.get("path")
+                if path:
+                    # If path is provided, use it as the build context
+                    build_args["path"] = path
+                    image, _ = client.images.build(**build_args)
+                else:
+                    raise HTTPException(status_code=400, detail="Either 'fileobj' or 'path' must be provided.")
 
             return {
                 "message": IMAGE_BUILD_SUCCESS.format(tag=build_args['tag']),

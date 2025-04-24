@@ -7,6 +7,7 @@ from typing import Dict, Any
 from pip._internal.vcs import git
 from scripts.models.image_model import ImageBuildRequest, ImageRemoveRequest, ImageGithubBuildRequest
 from scripts.constants.app_constants import *
+from fastapi.security import OAuth2PasswordBearer
 from scripts.constants.app_configuration import settings
 from scripts.utils.jwt_utils import get_current_user_from_token
 
@@ -16,7 +17,8 @@ try:
 except Exception as e:
     print(e)
     print("Docker is not reachable")
-oauth2_scheme = None #OAuth2PasswordBearer(tokenUrl=Endpoints.AUTH_LOGIN)
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/auth/login")
 
 class ImageHandler:
 

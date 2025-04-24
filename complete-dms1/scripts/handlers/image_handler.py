@@ -59,8 +59,10 @@ class ImageHandler:
                 # Handle path (directory) build context
                 path = build_args.get("path")
                 if path:
-                    # If path is provided, use it as the build context
-                    build_args["path"] = path
+                    # Ensure the path is a directory, as Docker expects a build context (folder)
+                    if not os.path.isdir(path):
+                        raise HTTPException(status_code=400, detail=f"{path} is not a valid directory.")
+                    build_args["path"] = path  # Use directory as build context
                     image, _ = client.images.build(**build_args)
                 else:
                     raise HTTPException(status_code=400, detail="Either 'fileobj' or 'path' must be provided.")

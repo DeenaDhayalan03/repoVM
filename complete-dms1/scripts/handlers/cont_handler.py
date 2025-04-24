@@ -72,7 +72,7 @@ def list_containers_with_filters(params: ContainerListRequest, current_user: Tok
 
         user_id = current_user.username
 
-        if user.role != "Admin":
+        if user_id.role != "Admin":
             raise HTTPException(status_code=403, detail="You do not have permission to access all containers.")
 
         containers = client.containers.list(**kwargs)

@@ -15,7 +15,7 @@ def run_container_view(
 ):
     try:
         logger.info(f"User '{current_user.username}' running container with basic parameters")
-        return run_container_advanced(request)
+        return run_container_advanced(request, current_user)
     except Exception as e:
         logger.error(f"Error running container: {e}")
         raise HTTPException(status_code=500, detail="Error running container")
@@ -27,7 +27,7 @@ def run_container_advanced_view(
 ):
     try:
         logger.info(f"User '{current_user.username}' running container with advanced parameters")
-        return run_container_advanced(data)
+        return run_container_advanced(data, current_user)
     except Exception as e:
         logger.error(f"Error running container with advanced parameters: {e}")
         raise HTTPException(status_code=500, detail="Error running container with advanced parameters")
@@ -39,7 +39,7 @@ def list_containers_view(
 ):
     try:
         logger.info(f"User '{current_user.username}' listing containers with filters: {params.dict(exclude_unset=True)}")
-        return list_containers_with_filters(params)
+        return list_containers_with_filters(params, current_user)
     except Exception as e:
         logger.error(f"Error listing containers: {e}")
         raise HTTPException(status_code=500, detail="Error listing containers")
@@ -52,7 +52,7 @@ def get_container_logs(
 ):
     try:
         logger.info(f"User '{current_user.username}' fetching logs for container '{name}' with params: {params.dict(exclude_unset=True)}")
-        return get_logs_with_params(name, params)
+        return get_logs_with_params(name, params, current_user)
     except Exception as e:
         logger.error(f"Error fetching logs for container '{name}': {e}")
         raise HTTPException(status_code=500, detail="Error fetching container logs")
@@ -65,7 +65,7 @@ def stop_container_view(
 ):
     try:
         logger.info(f"User '{current_user.username}' stopping container '{name}' with timeout={timeout}")
-        return stop_container(name, timeout)
+        return stop_container(name, current_user, timeout )
     except Exception as e:
         logger.error(f"Error stopping container '{name}': {e}")
         raise HTTPException(status_code=500, detail="Error stopping container")
@@ -77,7 +77,7 @@ def start_container_view(
 ):
     try:
         logger.info(f"User '{current_user.username}' starting container '{name}'")
-        return start_container(name)
+        return start_container(name, current_user)
     except Exception as e:
         logger.error(f"Error starting container '{name}': {e}")
         raise HTTPException(status_code=500, detail="Error starting container")
@@ -90,7 +90,7 @@ def remove_container_view(
 ):
     try:
         logger.info(f"User '{current_user.username}' removing container '{name}' with params: {params.dict(exclude_unset=True)}")
-        return remove_container_with_params(name, params)
+        return remove_container_with_params(name, params, current_user)
     except Exception as e:
         logger.error(f"Error removing container '{name}': {e}")
         raise HTTPException(status_code=500, detail="Error removing container")

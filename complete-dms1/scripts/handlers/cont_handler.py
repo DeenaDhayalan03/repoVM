@@ -25,6 +25,7 @@ from scripts.constants.app_constants import (
 )
 from scripts.utils.jwt_utils import get_current_user_from_token
 from datetime import datetime
+from scripts.logging.logger import logger
 from scripts.models.jwt_model import TokenData
 from scripts.utils.rate_limit_utils import check_rate_limit
 from scripts.constants.api_endpoints import Endpoints
@@ -39,15 +40,40 @@ mongo = MongoDBConnection()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/auth/login")
 
+from fastapi import HTTPException
+from docker.errors import DockerException
+
 def run_container_advanced(data: ContainerRunAdvancedRequest, current_user: TokenData):
     try:
         kwargs = data.dict(exclude_unset=True)
         image = kwargs.pop("image")
         command = kwargs.pop("command", None)
-
         user_id = current_user.username
 
         check_rate_limit(user_id)
+
+        for mem_field in ["mem_limit", "mem_reservation", "memswap_limit", "shm_size"]:
+            if mem_field in kwargs and kwargs[mem_field] == "":
+                kwargs.pop(mem_field)
+
+        if "volumes" in kwargs:
+            raw_volumes = kwargs.pop("volumes")
+            cleaned_volumes = {}
+            for host_path, mount_info in raw_volumes.items():
+                bind = mount_info.get("bind")
+                mode = mount_info.get("mode", "rw")
+                if bind:
+                    cleaned_volumes[host_path] = {"bind": bind, "mode": mode}
+            kwargs["volumes"] = cleaned_volumes
+
+        if "ports" in kwargs:
+            ports = kwargs["ports"]
+            if not any(ports.values()):
+                kwargs.pop("ports")
+
+        for k in list(kwargs.keys()):
+            if kwargs[k] in ["", {}, []]:
+                kwargs.pop(k)
 
         container = client.containers.run(image=image, command=command, **kwargs)
 
@@ -63,8 +89,14 @@ def run_container_advanced(data: ContainerRunAdvancedRequest, current_user: Toke
             "id": container.id,
             "status": container.status
         }
-    except Exception as e:
+
+    except DockerException as e:
+        logger.error(f"Docker error: {e}")
         raise HTTPException(status_code=500, detail=f"{CONTAINER_CREATE_FAILURE}: {str(e)}")
+    except Exception as e:
+        logger.error(f"Unhandled error: {e}")
+        raise HTTPException(status_code=500, detail=f"{CONTAINER_CREATE_FAILURE}: {str(e)}")
+
 
 def list_containers_with_filters(params: ContainerListRequest, current_user: TokenData):
     try:

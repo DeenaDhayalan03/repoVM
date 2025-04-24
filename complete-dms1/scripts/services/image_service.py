@@ -63,7 +63,7 @@ def push_image_service(local_tag: str, remote_repo: str, current_user: TokenData
 def pull_image_service(repository: str, local_tag: str = None, current_user: TokenData = Depends(get_current_user)):
     try:
         logger.info(f"User '{current_user.username}' is attempting to pull image from repository: {repository}")
-        return ImageHandler.pull_image(repository, local_tag, current_user)
+        return ImageHandler.pull_image(repository, current_user, local_tag)
     except Exception as e:
         logger.error(f"Error pulling image from repository {repository}: {e}")
         raise HTTPException(status_code=500, detail="Error pulling image")

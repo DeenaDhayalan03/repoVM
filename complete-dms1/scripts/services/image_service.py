@@ -34,16 +34,14 @@ def build_image_from_github_service(data: ImageGithubBuildRequest, current_user:
         raise HTTPException(status_code=500, detail="Error building image from GitHub repository")
 
 @image_router.get(Endpoints.IMAGE_LIST)
-def list_images_service(name: str = None, all: bool = False, filters: Optional[str] = Query(default=None), current_user: TokenData = Depends(get_current_user)):
+def list_images_service(name: str = None, all: bool = False, current_user: TokenData = Depends(get_current_user)):
     try:
-        filters_dict = json.loads(filters) if filters else None
-        logger.info(f"User '{current_user.username}' is listing Docker images with filters: {filters_dict}")
-        return ImageHandler.list_images(name, all, filters_dict, current_user)
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="Invalid JSON in filters")
+        logger.info(f"User '{current_user.username}' is listing Docker images")
+        return ImageHandler.list_images(name, all, current_user)
     except Exception as e:
-        logger.error(f"Error listing Docker images with filters {filters}: {e}")
+        logger.error(f"Error listing Docker images: {e}")
         raise HTTPException(status_code=500, detail="Error listing Docker images")
+
 
 @image_router.post(Endpoints.DOCKER_REGISTRY_LOGIN)
 def dockerhub_login_service(username: str, password: str, current_user: TokenData = Depends(get_current_user)):

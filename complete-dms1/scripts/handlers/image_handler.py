@@ -115,18 +115,17 @@ class ImageHandler:
         except Exception as e:
             raise HTTPException(status_code=500, detail=IMAGE_BUILD_FAILURE)
 
+
     @staticmethod
-    def list_images(current_user: TokenData, name: str = None, all: bool = False, filters: Optional[str] = Query(default=None)):
+    def list_images(name: str = None, all: bool = False, current_user: TokenData = Depends(get_current_user)):
         try:
             user_id = current_user.username
 
             kwargs = {}
-            if name is not None:
+            if name:
                 kwargs["name"] = name
             if all:
                 kwargs["all"] = True
-            if filters is not None:
-                kwargs["filters"] = filters
 
             images = client.images.list(**kwargs)
 
@@ -137,6 +136,7 @@ class ImageHandler:
 
         except Exception as e:
             raise HTTPException(status_code=500, detail=IMAGE_LIST_RETRIEVED)
+
 
     @staticmethod
     def dockerhub_login(username: str, password: str, current_user: TokenData):

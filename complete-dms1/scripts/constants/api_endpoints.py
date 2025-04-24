@@ -12,7 +12,7 @@ class Endpoints:
     IMAGE_PUSH = "/docker/images/push"
     IMAGE_PULL = "/docker/images/pull"
     IMAGE_LIST = "/docker/images"
-    IMAGE_DELETE = "/docker/images/{image_name}/delete"
+    IMAGE_DELETE = "/docker/images/delete"
 
     CONTAINER_CREATE = "/docker/containers"
     CONTAINER_CREATE_ADVANCED = "/docker/containers/advanced"

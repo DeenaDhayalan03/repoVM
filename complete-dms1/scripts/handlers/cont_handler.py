@@ -64,7 +64,7 @@ def run_container_advanced(data: ContainerRunAdvancedRequest, current_user: Toke
             "status": container.status
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=CONTAINER_CREATE_FAILURE)
+        raise HTTPException(status_code=500, detail=f"{CONTAINER_CREATE_FAILURE}: {str(e)}")
 
 def list_containers_with_filters(params: ContainerListRequest, current_user: TokenData):
     try:

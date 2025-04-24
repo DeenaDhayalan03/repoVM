@@ -6,7 +6,7 @@ COPY . /app
 
 RUN apt-get update && apt-get install -y gcc libffi-dev libssl-dev build-essential
 
-RUN pip install --no-cache-dir -v -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt || (echo "Error with pip install" && cat /root/.pip/pip.log)
 
 EXPOSE 8000
 

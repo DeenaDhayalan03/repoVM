@@ -117,7 +117,7 @@ class ImageHandler:
 
 
     @staticmethod
-    def list_images(name: str = None, all: bool = False, current_user: TokenData = Depends(get_current_user)):
+    def list_images(name: str = None, all: bool = False, current_user: TokenData):
         try:
             user_id = current_user.username
 

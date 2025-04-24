@@ -116,7 +116,7 @@ class ImageHandler:
             raise HTTPException(status_code=500, detail=IMAGE_BUILD_FAILURE)
 
     @staticmethod
-    def list_images(current_user: TokenData, name: str = None, all: bool = False, filters: Dict[str, Any] = None):
+    def list_images(current_user: TokenData, name: str = None, all: bool = False, filters: Optional[str] = Query(default=None)):
         try:
             user_id = current_user.username
 

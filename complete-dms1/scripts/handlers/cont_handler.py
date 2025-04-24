@@ -25,6 +25,7 @@ from scripts.constants.app_constants import (
 )
 from scripts.utils.jwt_utils import get_current_user_from_token
 from datetime import datetime
+from scripts.models.jwt_model import TokenData
 from scripts.utils.rate_limit_utils import check_rate_limit
 from scripts.constants.api_endpoints import Endpoints
 
@@ -38,14 +39,13 @@ mongo = MongoDBConnection()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/auth/login")
 
-def run_container_advanced(data: ContainerRunAdvancedRequest, token: str = Depends(oauth2_scheme)):
+def run_container_advanced(data: ContainerRunAdvancedRequest, current_user: TokenData):
     try:
         kwargs = data.dict(exclude_unset=True)
         image = kwargs.pop("image")
         command = kwargs.pop("command", None)
 
-        user = get_current_user_from_token(token)
-        user_id = user.id
+        user_id = current_user.username
 
         check_rate_limit(user_id)
 
@@ -66,11 +66,11 @@ def run_container_advanced(data: ContainerRunAdvancedRequest, token: str = Depen
     except Exception as e:
         raise HTTPException(status_code=500, detail=CONTAINER_CREATE_FAILURE)
 
-def list_containers_with_filters(params: ContainerListRequest, token: str = Depends(oauth2_scheme)):
+def list_containers_with_filters(params: ContainerListRequest, current_user: TokenData):
     try:
         kwargs = params.dict(exclude_unset=True)
 
-        user = get_current_user_from_token(token)
+        user_id = current_user.username
 
         if user.role != "Admin":
             raise HTTPException(status_code=403, detail="You do not have permission to access all containers.")
@@ -88,14 +88,14 @@ def list_containers_with_filters(params: ContainerListRequest, token: str = Depe
     except Exception:
         raise HTTPException(status_code=500, detail=CONTAINER_LIST_FAILURE)
 
-def stop_container(name: str, timeout: float = None, token: str = Depends(oauth2_scheme)):
+def stop_container(name: str, current_user: TokenData, timeout: float = None):
     try:
         container = client.containers.get(name)
         stop_args = {"timeout": timeout} if timeout is not None else {}
 
-        user = get_current_user_from_token(token)
+        user_id = current_user.username
 
-        if user.role != "Admin":
+        if user_id.role != "Admin":
             raise HTTPException(status_code=403, detail="You do not have permission to stop containers.")
 
         container.stop(**stop_args)
@@ -105,13 +105,13 @@ def stop_container(name: str, timeout: float = None, token: str = Depends(oauth2
     except Exception:
         raise HTTPException(status_code=500, detail=CONTAINER_STOP_FAILURE)
 
-def start_container(name: str, token: str = Depends(oauth2_scheme)):
+def start_container(name: str, current_user: TokenData):
     try:
         container = client.containers.get(name)
 
-        user = get_current_user_from_token(token)
+        user_id = current_user.username
 
-        if user.role != "Admin":
+        if user_id.role != "Admin":
             raise HTTPException(status_code=403, detail="You do not have permission to start containers.")
 
         container.start()
@@ -121,12 +121,12 @@ def start_container(name: str, token: str = Depends(oauth2_scheme)):
     except Exception:
         raise HTTPException(status_code=500, detail=CONTAINER_START_FAILURE)
 
-def get_logs_with_params(name: str, params: ContainerLogsRequest, token: str = Depends(oauth2_scheme)) -> ContainerLogsResponse:
+def get_logs_with_params(name: str, params: ContainerLogsRequest, current_user: TokenData) -> ContainerLogsResponse:
     try:
         container = client.containers.get(name)
         opts = params.dict(exclude_unset=True)
 
-        user = get_current_user_from_token(token)
+        user_id = current_user.username
 
         if opts.pop("follow", False):
             raise HTTPException(status_code=400, detail="Streaming logs not supported in structured response.")
@@ -145,14 +145,14 @@ def get_logs_with_params(name: str, params: ContainerLogsRequest, token: str = D
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{CONTAINER_LOGS_FAILURE}: {str(e)}")
 
-def remove_container_with_params(name: str, params: ContainerRemoveRequest, token: str = Depends(oauth2_scheme)):
+def remove_container_with_params(name: str, params: ContainerRemoveRequest, current_user: TokenData):
     try:
         container = client.containers.get(name)
         opts = params.dict(exclude_unset=True)
 
-        user = get_current_user_from_token(token)
+        user_id = current_user.username
 
-        if user.role != "Admin":
+        if user_id.role != "Admin":
             raise HTTPException(status_code=403, detail="You do not have permission to remove containers.")
 
         container.remove(**opts)

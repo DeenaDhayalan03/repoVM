@@ -17,7 +17,7 @@ image_router = APIRouter()
 def build_image_service(data: ImageBuildRequest, current_user: TokenData = Depends(get_current_user)):
     try:
         logger.info(f"User '{current_user.username}' is attempting to build an image with tag: {data.tag}")
-        return ImageHandler.build_image(data, current_user.access_token)
+        return ImageHandler.build_image(data, current_user)
     except Exception as e:
         logger.error(f"Error building image with tag {data.tag}: {e}")
         raise HTTPException(status_code=500, detail="Error building image")

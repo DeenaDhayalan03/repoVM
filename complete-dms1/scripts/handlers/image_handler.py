@@ -7,6 +7,7 @@ from typing import Dict, Any
 from pip._internal.vcs import git
 from scripts.models.image_model import ImageBuildRequest, ImageRemoveRequest, ImageGithubBuildRequest
 from scripts.constants.app_constants import *
+from scripts.models.jwt_model import TokenData
 from fastapi.security import OAuth2PasswordBearer
 from scripts.constants.app_configuration import settings
 from scripts.utils.jwt_utils import get_current_user_from_token
@@ -27,10 +28,9 @@ class ImageHandler:
         return bool(re.match(r"^[a-z0-9]+([._-]?[a-z0-9]+)*(\/[a-z0-9]+([._-]?[a-z0-9]+)*)*(\:[a-zA-Z0-9_.-]+)?$", tag))
 
     @staticmethod
-    def build_image(data: ImageBuildRequest, token: str = Depends(oauth2_scheme)):
+    def build_image(data: ImageBuildRequest, current_user: TokenData):
         try:
-            user = get_current_user_from_token(token)
-            user_id = user.username
+            user_id = current_user.username
 
             build_args = data.dict(exclude_unset=True)
 

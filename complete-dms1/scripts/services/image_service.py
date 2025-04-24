@@ -1,5 +1,3 @@
-import json
-from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import Optional
 from scripts.models.image_model import ImageBuildRequest, ImageRemoveRequest, ImageGithubBuildRequest

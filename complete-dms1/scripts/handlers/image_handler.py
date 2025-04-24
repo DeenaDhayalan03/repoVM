@@ -2,9 +2,9 @@ import docker
 import re
 import os
 import tempfile
+import git
 from fastapi import HTTPException, Depends, Query
 from typing import Dict, Any, Optional
-from pip._internal.vcs import git
 from scripts.models.image_model import ImageBuildRequest, ImageRemoveRequest, ImageGithubBuildRequest
 from scripts.constants.app_constants import *
 from scripts.models.jwt_model import TokenData
@@ -78,31 +78,28 @@ class ImageHandler:
         try:
             temp_dir = tempfile.mkdtemp()
             repo_url = data.github_url
-            repo_name = repo_url.split("/")[-1].replace(".git", "")
             dockerfile_path = data.dockerfile_path
 
-            git.Repo.clone_from(repo_url, temp_dir)
+            # Clone GitHub repo into temp_dir
+            try:
+                git.Repo.clone_from(repo_url, temp_dir)
+            except git.exc.GitCommandError as e:
+                raise HTTPException(status_code=400, detail=f"Git clone failed: {str(e)}")
 
+            # Full path to Dockerfile
             dockerfile_full_path = os.path.join(temp_dir, dockerfile_path)
             if not os.path.exists(dockerfile_full_path):
-                raise HTTPException(status_code=400, detail=f"Dockerfile not found at {dockerfile_path}")
+                raise HTTPException(status_code=400, detail=f"Dockerfile not found at: {dockerfile_path}")
 
-            build_args = {
-                "path": temp_dir,
-                "dockerfile": dockerfile_path,
-                "tag": data.tag
-            }
+            image, _ = client.images.build(
+                path=temp_dir,
+                dockerfile=dockerfile_path,
+                tag=data.tag
+            )
 
-            user_id = current_user.username
-
-            image, _ = client.images.build(**build_args)
-
-            for root, dirs, files in os.walk(temp_dir, topdown=False):
-                for file in files:
-                    os.remove(os.path.join(root, file))
-                for dir in dirs:
-                    os.rmdir(os.path.join(root, dir))
-            os.rmdir(temp_dir)
+            # Clean up
+            import shutil
+            shutil.rmtree(temp_dir)
 
             return {
                 "message": IMAGE_BUILD_SUCCESS.format(tag=data.tag),
@@ -111,10 +108,9 @@ class ImageHandler:
             }
 
         except git.exc.GitCommandError as e:
-            raise HTTPException(status_code=400, detail=f"Error cloning GitHub repository: {str(e)}")
+            raise HTTPException(status_code=400, detail=f"Git error: {str(e)}")
         except Exception as e:
-            raise HTTPException(status_code=500, detail=IMAGE_BUILD_FAILURE)
-
+            raise HTTPException(status_code=500, detail=f"{IMAGE_BUILD_FAILURE}: {str(e)}")
 
     @staticmethod
     def list_images(name: str = None, all: bool = False, current_user: TokenData=None):

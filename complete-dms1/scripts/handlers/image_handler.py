@@ -3,7 +3,7 @@ import re
 import os
 import tempfile
 from fastapi import HTTPException, Depends, Query
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from pip._internal.vcs import git
 from scripts.models.image_model import ImageBuildRequest, ImageRemoveRequest, ImageGithubBuildRequest
 from scripts.constants.app_constants import *

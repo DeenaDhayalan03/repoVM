@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
     libcurl4-openssl-dev \
     libjpeg-dev
 
-RUN pip install --no-cache-dir -r requirements.txt | tee /tmp/pip_install.log || (echo "Error with pip install" && cat /tmp/pip_install.log)
+RUN pip install --no-cache-dir -r requirements.txt uvicorn[standard] | tee /tmp/pip_install.log || (echo "Error with pip install" && cat /tmp/pip_install.log)
 
 EXPOSE 8000
 

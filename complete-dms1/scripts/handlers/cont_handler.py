@@ -1,4 +1,5 @@
 import docker
+import json
 from docker.errors import NotFound
 from fastapi import HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer
@@ -103,9 +104,14 @@ def list_containers_with_filters(params: ContainerListRequest, current_user: Tok
         kwargs = params.dict(exclude_unset=True)
 
         user_id = current_user.username
-
         if user_id.role != "Admin":
             raise HTTPException(status_code=403, detail="You do not have permission to access all containers.")
+
+        if "filters" in kwargs:
+            try:
+                kwargs["filters"] = json.loads(kwargs["filters"])
+            except json.JSONDecodeError:
+                raise HTTPException(status_code=400, detail="Invalid filters format")
 
         containers = client.containers.list(**kwargs)
 
@@ -117,8 +123,9 @@ def list_containers_with_filters(params: ContainerListRequest, current_user: Tok
                 "status": c.status
             } for c in containers
         ]
-    except Exception:
-        raise HTTPException(status_code=500, detail=CONTAINER_LIST_FAILURE)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error listing containers: {str(e)}")
 
 def stop_container(name: str, current_user: TokenData, timeout: float = None):
     try:

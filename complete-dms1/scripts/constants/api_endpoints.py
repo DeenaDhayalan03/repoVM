@@ -15,7 +15,6 @@ class Endpoints:
     IMAGE_DELETE = "/docker/images/delete"
 
     CONTAINER_CREATE_ADVANCED = "/docker/containers/advanced"
-    CONTAINER_START = "/docker/containers/{container_name}/start"
     CONTAINER_STOP = "/docker/containers/{container_name}/stop"
     CONTAINER_LOGS = "/docker/containers/{container_name}/logs"
     CONTAINER_LIST = "/docker/containers/list"

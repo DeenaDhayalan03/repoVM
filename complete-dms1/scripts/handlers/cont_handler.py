@@ -17,7 +17,6 @@ from scripts.constants.app_constants import (
     CONTAINER_STOP_SUCCESS,
     CONTAINER_LIST_FAILURE,
     CONTAINER_STOP_FAILURE,
-    CONTAINER_START_FAILURE,
     CONTAINER_LOGS_FAILURE,
     CONTAINER_LOGS_RETRIEVED,
     CONTAINER_REMOVE_FAILURE,
@@ -30,6 +29,7 @@ from scripts.logging.logger import logger
 from scripts.models.jwt_model import TokenData
 from scripts.utils.rate_limit_utils import check_rate_limit
 from scripts.constants.api_endpoints import Endpoints
+from docker.errors import DockerException
 
 
 try:
@@ -41,8 +41,6 @@ mongo = MongoDBConnection()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/auth/login")
 
-from fastapi import HTTPException
-from docker.errors import DockerException
 
 def run_container_advanced(data: ContainerRunAdvancedRequest, current_user: TokenData):
     try:
@@ -139,19 +137,6 @@ def stop_container(name: str, current_user: TokenData, timeout: float = None):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{CONTAINER_STOP_FAILURE}: {str(e)}")
 
-def start_container(name: str, current_user: TokenData):
-    try:
-        container = client.containers.get(name)
-
-        if current_user.role != "admin":
-            raise HTTPException(status_code=403, detail="You do not have permission to start containers.")
-
-        container.start()
-        return {"message": CONTAINER_START_SUCCESS}
-    except NotFound:
-        raise HTTPException(status_code=404, detail=CONTAINER_NOT_FOUND)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{CONTAINER_START_FAILURE}: {str(e)}")
 
 def get_logs_with_params(name: str, params: ContainerLogsRequest, current_user: TokenData) -> ContainerLogsResponse:
     try:

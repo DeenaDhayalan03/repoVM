@@ -139,7 +139,6 @@ class ImageHandler:
         try:
             user_id = current_user.username
 
-
             client.login(username=username, password=password)
             return {"message": AUTH_LOGIN_SUCCESS}
         except Exception as e:

@@ -58,17 +58,6 @@ def stop_container_view(
         logger.error(f"Error stopping container '{name}': {e}")
         raise HTTPException(status_code=500, detail="Error stopping container")
 
-@container_router.post(Endpoints.CONTAINER_START)
-def start_container_view(
-    name: str,
-    current_user: TokenData = Depends(get_current_user)
-):
-    try:
-        logger.info(f"User '{current_user.username}' starting container '{name}'")
-        return start_container(name, current_user)
-    except Exception as e:
-        logger.error(f"Error starting container '{name}': {e}")
-        raise HTTPException(status_code=500, detail="Error starting container")
 
 @container_router.post(Endpoints.CONTAINER_DELETE)
 def remove_container_view(

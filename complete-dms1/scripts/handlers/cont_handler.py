@@ -184,9 +184,7 @@ def remove_container_with_params(name: str, params: ContainerRemoveRequest, curr
         container = client.containers.get(name)
         opts = params.dict(exclude_unset=True)
 
-        user_id = current_user.username
-
-        if user_id.role != "Admin":
+        if current_user.role != "admin":
             raise HTTPException(status_code=403, detail="You do not have permission to remove containers.")
 
         container.remove(**opts)
@@ -196,5 +194,5 @@ def remove_container_with_params(name: str, params: ContainerRemoveRequest, curr
         }
     except NotFound:
         raise HTTPException(status_code=404, detail=CONTAINER_NOT_FOUND)
-    except Exception:
-        raise HTTPException(status_code=500, detail=CONTAINER_REMOVE_FAILURE)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{CONTAINER_REMOVE_FAILURE} :{str(e)}")

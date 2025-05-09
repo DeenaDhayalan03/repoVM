@@ -3,6 +3,7 @@ import re
 import os
 import tempfile
 import git
+import shutil
 from fastapi import HTTPException, Depends, Query
 from typing import Dict, Any, Optional
 from scripts.models.image_model import ImageBuildRequest, ImageRemoveRequest, ImageGithubBuildRequest
@@ -80,25 +81,24 @@ class ImageHandler:
             repo_url = data.github_url
             dockerfile_path = data.dockerfile_path
 
-            # Clone GitHub repo into temp_dir
             try:
                 git.Repo.clone_from(repo_url, temp_dir)
             except git.exc.GitCommandError as e:
                 raise HTTPException(status_code=400, detail=f"Git clone failed: {str(e)}")
 
-            # Full path to Dockerfile
             dockerfile_full_path = os.path.join(temp_dir, dockerfile_path)
             if not os.path.exists(dockerfile_full_path):
                 raise HTTPException(status_code=400, detail=f"Dockerfile not found at: {dockerfile_path}")
 
+            dockerfile_dir = os.path.dirname(dockerfile_full_path)
+            dockerfile_name = os.path.basename(dockerfile_path)
+
             image, _ = client.images.build(
-                path=temp_dir,
-                dockerfile=dockerfile_path,
+                path=dockerfile_dir,
+                dockerfile=dockerfile_name,
                 tag=data.tag
             )
 
-            # Clean up
-            import shutil
             shutil.rmtree(temp_dir)
 
             return {

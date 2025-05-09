@@ -24,8 +24,8 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/auth/login")
 
 def create_volume_with_params(data: VolumeCreateRequest, current_user: TokenData):
     try:
-        if current_user.role != "Admin":
-            logger.warning(f"User '{current_user['username']}' is not authorized to create volumes")
+        if current_user.role != "admin":
+            logger.warning(f"User '{current_user.username}' is not authorized to create volumes")
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You don't have permission to create volumes"
@@ -34,7 +34,7 @@ def create_volume_with_params(data: VolumeCreateRequest, current_user: TokenData
         opts = data.dict(exclude_unset=True)
         volume = client.volumes.create(**opts)
 
-        logger.info(f"Created volume '{volume.name}' successfully by user '{current_user['username']}'")
+        logger.info(f"Created volume '{volume.name}' successfully by user '{current_user.username}'")
         return {
             "message": f"{VOLUME_CREATE_SUCCESS}: '{volume.name}'",
             "name": volume.name,
@@ -53,7 +53,7 @@ def create_volume_with_params(data: VolumeCreateRequest, current_user: TokenData
 def remove_volume_with_params(name: str, params: VolumeRemoveRequest, current_user: TokenData):
     try:
         if current_user.role != "admin":
-            logger.warning(f"User '{current_user['username']}' is not authorized to remove volumes")
+            logger.warning(f"User '{current_user.username}' is not authorized to remove volumes")
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You don't have permission to remove volumes"
@@ -64,7 +64,7 @@ def remove_volume_with_params(name: str, params: VolumeRemoveRequest, current_us
         volume = client.volumes.get(name)
         volume.remove(**opts)
 
-        logger.info(f"Removed volume '{name}' successfully by user '{current_user['username']}'")
+        logger.info(f"Removed volume '{name}' successfully by user '{current_user.username}'")
         return {"message": f"{VOLUME_REMOVE_SUCCESS}: '{name}'"}
 
     except docker.errors.NotFound:

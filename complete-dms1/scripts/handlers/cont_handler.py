@@ -147,15 +147,15 @@ def start_container(name: str, current_user: TokenData):
 
         user_id = current_user.username
 
-        if user_id.role != "Admin":
+        if user_id.role != "admin":
             raise HTTPException(status_code=403, detail="You do not have permission to start containers.")
 
         container.start()
         return {"message": CONTAINER_START_SUCCESS}
     except NotFound:
-        raise HTTPException(status_code=404, detail=CONTAINER_NOT_FOUND)
+        raise HTTPException(status_code=404, detail=f"{CONTAINER_NOT_FOUND}: {str(e)}")
     except Exception:
-        raise HTTPException(status_code=500, detail=CONTAINER_START_FAILURE)
+        raise HTTPException(status_code=500, detail=f"{CONTAINER_START_FAILURE}: {str(e)}")
 
 def get_logs_with_params(name: str, params: ContainerLogsRequest, current_user: TokenData) -> ContainerLogsResponse:
     try:

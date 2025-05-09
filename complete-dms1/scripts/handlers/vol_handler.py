@@ -11,6 +11,7 @@ from scripts.constants.app_constants import (
 )
 from scripts.utils.jwt_utils import decode_access_token
 from scripts.logging.logger import logger
+from scripts.models.jwt_model import TokenData
 from scripts.constants.api_endpoints import Endpoints
 
 try:
@@ -18,19 +19,12 @@ try:
 except Exception as e:
     print(e)
     print("Docker is not reachable")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl=Endpoints.AUTH_LOGIN)
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
-    user = decode_access_token(token)
-    if not user:
-        logger.warning("Invalid or expired token")
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
-    return user
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/auth/login")
 
-
-def create_volume_with_params(data: VolumeCreateRequest, current_user: dict = Depends(get_current_user)):
+def create_volume_with_params(data: VolumeCreateRequest, current_user: TokenData):
     try:
-        if current_user["role"] != "Admin":
+        if current_user.role != "Admin":
             logger.warning(f"User '{current_user['username']}' is not authorized to create volumes")
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -56,9 +50,9 @@ def create_volume_with_params(data: VolumeCreateRequest, current_user: dict = De
         raise HTTPException(status_code=500, detail=VOLUME_CREATE_FAILURE)
 
 
-def remove_volume_with_params(name: str, params: VolumeRemoveRequest, current_user: dict = Depends(get_current_user)):
+def remove_volume_with_params(name: str, params: VolumeRemoveRequest, current_user: TokenData):
     try:
-        if current_user["role"] != "Admin":
+        if current_user.role != "admin":
             logger.warning(f"User '{current_user['username']}' is not authorized to remove volumes")
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

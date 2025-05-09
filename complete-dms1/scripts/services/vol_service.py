@@ -9,9 +9,7 @@ from scripts.utils.jwt_utils import get_current_user
 from scripts.models.jwt_model import TokenData
 from scripts.constants.api_endpoints import Endpoints
 
-
 volume_router = APIRouter()
-
 
 @volume_router.post(Endpoints.VOLUME_CREATE, status_code=status.HTTP_201_CREATED)
 def create_volume_view(data: VolumeCreateRequest, current_user: TokenData = Depends(get_current_user)):

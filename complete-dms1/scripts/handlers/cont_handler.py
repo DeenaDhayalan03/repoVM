@@ -131,9 +131,7 @@ def stop_container(name: str, current_user: TokenData, timeout: float = None):
         container = client.containers.get(name)
         stop_args = {"timeout": timeout} if timeout is not None else {}
 
-        user_id = current_user.username
-
-        if user_id.role != "Admin":
+        if current_user.role != "Admin":
             raise HTTPException(status_code=403, detail="You do not have permission to stop containers.")
 
         container.stop(**stop_args)

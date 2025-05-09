@@ -145,9 +145,7 @@ def start_container(name: str, current_user: TokenData):
     try:
         container = client.containers.get(name)
 
-        user_id = current_user.username
-
-        if user_id.role != "admin":
+        if current_user.role != "admin":
             raise HTTPException(status_code=403, detail="You do not have permission to start containers.")
 
         container.start()

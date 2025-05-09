@@ -56,7 +56,7 @@ class ContainerRunAdvancedRequest(BaseModel):
 class ContainerListRequest(BaseModel):
     all: Optional[bool] = False
     before: Optional[str] = None
-    filters: Optional[Any] = None
+    filters: Optional[dict] = None
     limit: Optional[int] = -1
     since: Optional[str] = None
     sparse: Optional[bool] = False

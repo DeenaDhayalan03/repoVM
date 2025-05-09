@@ -107,11 +107,9 @@ def list_containers_with_filters(params: ContainerListRequest, current_user: Tok
         if user_id.role != "Admin":
             raise HTTPException(status_code=403, detail="You do not have permission to access all containers.")
 
-        if "filters" in kwargs:
-            try:
-                kwargs["filters"] = json.loads(kwargs["filters"])
-            except json.JSONDecodeError:
-                raise HTTPException(status_code=400, detail="Invalid filters format")
+        if "filters" in kwargs and kwargs["filters"]:
+            if not isinstance(kwargs["filters"], dict):
+                raise HTTPException(status_code=400, detail="Filters should be a dictionary.")
 
         containers = client.containers.list(**kwargs)
 
@@ -126,6 +124,7 @@ def list_containers_with_filters(params: ContainerListRequest, current_user: Tok
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error listing containers: {str(e)}")
+
 
 def stop_container(name: str, current_user: TokenData, timeout: float = None):
     try:

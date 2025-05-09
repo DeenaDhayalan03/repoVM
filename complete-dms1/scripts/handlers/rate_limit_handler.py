@@ -9,7 +9,7 @@ mongodb = MongoDBConnection()
 
 
 def get_rate_limit_handler(user_id: str, current_user: TokenData) -> RateLimitConfig:
-    if current_user.role != "Admin":
+    if current_user.role != "admin":
         logger.warning(f"Access denied for user '{current_user.username}' - Insufficient role")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient role to access rate limit data")
 
@@ -22,7 +22,7 @@ def get_rate_limit_handler(user_id: str, current_user: TokenData) -> RateLimitCo
 
 
 def set_rate_limit_handler(user_id: str, limit: int, time_window: int, current_user: TokenData) -> dict:
-    if current_user.role != "Admin":
+    if current_user.role != "admin":
         logger.warning(f"Access denied for user '{current_user.username}'")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient role to set rate limit")
 
@@ -46,7 +46,7 @@ def set_rate_limit_handler(user_id: str, limit: int, time_window: int, current_u
 
 
 def update_rate_limit_handler(user_id: str, limit: int, time_window: int, current_user: TokenData) -> dict:
-    if current_user.role != "Admin":
+    if current_user.role != "admin":
         logger.warning(f"Access denied for user '{current_user.username}'")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient role to update rate limit")
 

@@ -8,18 +8,6 @@ from scripts.models.jwt_model import TokenData
 
 container_router = APIRouter()
 
-@container_router.post(Endpoints.CONTAINER_CREATE)
-def run_container_view(
-    request: ContainerRunAdvancedRequest,
-    current_user: TokenData = Depends(get_current_user)
-):
-    try:
-        logger.info(f"User '{current_user.username}' running container with basic parameters")
-        return run_container_advanced(request, current_user)
-    except Exception as e:
-        logger.error(f"Error running container: {e}")
-        raise HTTPException(status_code=500, detail="Error running container")
-
 @container_router.post(Endpoints.CONTAINER_CREATE_ADVANCED)
 def run_container_advanced_view(
     data: ContainerRunAdvancedRequest,

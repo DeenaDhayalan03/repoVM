@@ -56,12 +56,13 @@ class ContainerRunAdvancedRequest(BaseModel):
 class ContainerListRequest(BaseModel):
     all: Optional[bool] = False
     before: Optional[str] = None
-    filters: Optional[dict] = None
+    filters: Optional[Dict[str, Any]] = None
     limit: Optional[int] = -1
     since: Optional[str] = None
     sparse: Optional[bool] = False
     ignore_removed: Optional[bool] = False
-
+    image: Optional[str] = None
+    
 
 class ContainerLogsRequest(BaseModel):
     stdout: Optional[bool] = True

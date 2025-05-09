@@ -153,8 +153,8 @@ def start_container(name: str, current_user: TokenData):
         container.start()
         return {"message": CONTAINER_START_SUCCESS}
     except NotFound:
-        raise HTTPException(status_code=404, detail=f"{CONTAINER_NOT_FOUND}: {str(e)}")
-    except Exception:
+        raise HTTPException(status_code=404, detail=CONTAINER_NOT_FOUND)
+    except Exception as e:
         raise HTTPException(status_code=500, detail=f"{CONTAINER_START_FAILURE}: {str(e)}")
 
 def get_logs_with_params(name: str, params: ContainerLogsRequest, current_user: TokenData) -> ContainerLogsResponse:

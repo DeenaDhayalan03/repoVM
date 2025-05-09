@@ -109,7 +109,6 @@ def list_containers_with_filters(params: ContainerListRequest, current_user: Tok
         if "filters" in kwargs and kwargs["filters"]:
             if not isinstance(kwargs["filters"], dict):
                 raise HTTPException(status_code=400, detail="Filters should be a dictionary.")
-
         containers = client.containers.list(**kwargs)
 
         return [

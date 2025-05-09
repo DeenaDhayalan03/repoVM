@@ -103,8 +103,7 @@ def list_containers_with_filters(params: ContainerListRequest, current_user: Tok
     try:
         kwargs = params.dict(exclude_unset=True)
 
-        user_id = current_user.username
-        if user_id.role != "Admin":
+        if current_user.role != "admin":
             raise HTTPException(status_code=403, detail="You do not have permission to access all containers.")
 
         if "filters" in kwargs and kwargs["filters"]:

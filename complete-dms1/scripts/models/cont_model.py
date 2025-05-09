@@ -61,8 +61,7 @@ class ContainerListRequest(BaseModel):
     since: Optional[str] = None
     sparse: Optional[bool] = False
     ignore_removed: Optional[bool] = False
-    image: Optional[str] = None
-    
+
 
 class ContainerLogsRequest(BaseModel):
     stdout: Optional[bool] = True

@@ -138,10 +138,10 @@ def stop_container(name: str, current_user: TokenData, timeout: float = None):
 
         container.stop(**stop_args)
         return {"message": CONTAINER_STOP_SUCCESS}
-    except NotFound:
-        raise HTTPException(status_code=404, detail=CONTAINER_NOT_FOUND)
-    except Exception:
-        raise HTTPException(status_code=500, detail=CONTAINER_STOP_FAILURE)
+    except NotFound as e:
+        raise HTTPException(status_code=404, detail=f"{CONTAINER_NOT_FOUND}: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{CONTAINER_STOP_FAILURE}: {str(e)}")
 
 def start_container(name: str, current_user: TokenData):
     try:

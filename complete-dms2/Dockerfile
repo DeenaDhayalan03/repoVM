@@ -11,9 +11,10 @@ RUN apt-get update && apt-get install -y \
     python3-dev \
     libpq-dev \
     libcurl4-openssl-dev \
-    libjpeg-dev
+    libjpeg-dev \
+ && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir -r requirements.txt | tee /tmp/pip_install.log || (echo "Error with pip install" && cat /tmp/pip_install.log)
+RUN pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 8000
 

@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from scripts.services.deployment_service import deployment_router
 from scripts.services.image_service import image_router as image_router
 from scripts.services.cont_service import container_router as cont_router
 from scripts.services.vol_service import volume_router as vol_router
@@ -27,6 +29,7 @@ def create_app() -> FastAPI:
     app.include_router(image_router, prefix="/images", tags=["Image Operations"])
     app.include_router(cont_router, prefix="/container", tags=["Container Operations"])
     app.include_router(vol_router, prefix="/volume", tags=["Volume Operations"])
+    app.include_router(deployment_router, prefix="/deployment", tags=["Deployment Operations"])
 
     return app
 

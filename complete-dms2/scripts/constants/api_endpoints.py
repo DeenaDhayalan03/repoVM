@@ -24,6 +24,11 @@ class Endpoints:
     VOLUME_CREATE = "/docker/volumes/create"
     VOLUME_DELETE = "/docker/volumes/{volume_name}/delete"
 
+    DEPLOYMENT_LIST = "/k8s/deployments"
+    DEPLOYMENT_CREATE = "/k8s/deployments/create"
+    DEPLOYMENT_SCALE = "/k8s/deployments/{namespace}/{name}/scale"
+    DEPLOYMENT_DELETE= "/k8s/deployments/{namespace}/{name}"
+
     ADMIN_USERS_LIST = "/admin/users"
     ADMIN_USER_DETAILS = "/admin/users/{username}"
     ADMIN_USER_DELETE = "/admin/users/{username}/delete"

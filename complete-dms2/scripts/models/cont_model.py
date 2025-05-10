@@ -50,6 +50,7 @@ class ContainerRunAdvancedRequest(BaseModel):
     volumes: Optional[Dict[str, Dict[str, str]]] = None
     volumes_from: Optional[List[str]] = None
     working_dir: Optional[str] = None
+    env_vars: Optional[Dict[str, str]] = None
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 

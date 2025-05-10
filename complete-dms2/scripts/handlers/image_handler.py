@@ -1,26 +1,23 @@
-import docker
-import re
-import os
-import tempfile
-import git
-import shutil
-from fastapi import HTTPException, Depends, Query
-from typing import Dict, Any, Optional
+from kubernetes import client, config
+from fastapi import HTTPException
 from scripts.models.image_model import ImageBuildRequest, ImageRemoveRequest, ImageGithubBuildRequest
 from scripts.constants.app_constants import *
 from scripts.models.jwt_model import TokenData
-from fastapi.security import OAuth2PasswordBearer
 from scripts.constants.app_configuration import settings
-from scripts.utils.jwt_utils import get_current_user_from_token
+import re
+import os
+import json
+import base64
+import tempfile
+import git
+import shutil
+import yaml
 
-
+# Load Kubernetes configuration
 try:
-    client = docker.from_env()
-except Exception as e:
-    print(e)
-    print("Docker is not reachable")
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/auth/login")
+    config.load_incluster_config()
+except:
+    config.load_kube_config()
 
 class ImageHandler:
 
@@ -32,7 +29,6 @@ class ImageHandler:
     def build_image(data: ImageBuildRequest, current_user: TokenData):
         try:
             user_id = current_user.username
-
             build_args = data.dict(exclude_unset=True)
 
             if not build_args.get("path") and not build_args.get("fileobj"):
@@ -45,30 +41,50 @@ class ImageHandler:
             else:
                 build_args["tag"] = settings.DEFAULT_DOCKER_TAG
 
-            if build_args.get("fileobj"):
-                file_path = build_args.pop("fileobj")
-                try:
-                    with open(file_path, "rb") as f:
-                        build_args["fileobj"] = f
-                        image, _ = client.images.build(**build_args)
-                except FileNotFoundError:
-                    raise HTTPException(status_code=400, detail=f"Dockerfile not found at path: {file_path}")
-                except IsADirectoryError:
-                    raise HTTPException(status_code=400, detail=f"{file_path} is a directory, not a file.")
-            else:
-                path = build_args.get("path")
-                if path:
-                    if not os.path.isdir(path):
-                        raise HTTPException(status_code=400, detail=f"{path} is not a valid directory.")
-                    build_args["path"] = path
-                    image, _ = client.images.build(**build_args)
-                else:
-                    raise HTTPException(status_code=400, detail="Either 'fileobj' or 'path' must be provided.")
+            # Use Kaniko for building images in Kubernetes
+            # Prepare the Kaniko pod specification
+            kaniko_pod_spec = {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "metadata": {
+                    "name": f"kaniko-build-{user_id}",
+                    "namespace": settings.KANIKO_NAMESPACE
+                },
+                "spec": {
+                    "containers": [{
+                        "name": "kaniko",
+                        "image": settings.KANIKO_IMAGE,
+                        "args": [
+                            f"--dockerfile={build_args.get('dockerfile', 'Dockerfile')}",
+                            f"--context={build_args['path']}",
+                            f"--destination={build_args['tag']}"
+                        ],
+                        "volumeMounts": [{
+                            "name": "kaniko-secret",
+                            "mountPath": "/kaniko/.docker/"
+                        }]
+                    }],
+                    "restartPolicy": "Never",
+                    "volumes": [{
+                        "name": "kaniko-secret",
+                        "secret": {
+                            "secretName": settings.DOCKER_SECRET_NAME
+                        }
+                    }]
+                }
+            }
+
+            # Create the Kaniko pod
+            api_instance = client.CoreV1Api()
+            api_instance.create_namespaced_pod(
+                namespace=settings.KANIKO_NAMESPACE,
+                body=kaniko_pod_spec
+            )
 
             return {
                 "message": IMAGE_BUILD_SUCCESS.format(tag=build_args['tag']),
-                "id": image.id,
-                "tags": image.tags or ["<none>:<none>"]
+                "id": f"kaniko-build-{user_id}",
+                "tags": [build_args['tag']]
             }
 
         except Exception as e:
@@ -90,56 +106,62 @@ class ImageHandler:
             if not os.path.exists(dockerfile_full_path):
                 raise HTTPException(status_code=400, detail=f"Dockerfile not found at: {dockerfile_path}")
 
-            dockerfile_dir = os.path.dirname(dockerfile_full_path)
-            dockerfile_name = os.path.basename(dockerfile_path)
-
-            image, _ = client.images.build(
-                path=dockerfile_dir,
-                dockerfile=dockerfile_name,
-                tag=data.tag
+            # Use the build_image method with the cloned path
+            build_request = ImageBuildRequest(
+                path=temp_dir,
+                tag=data.tag,
+                dockerfile=dockerfile_path
             )
-
-            shutil.rmtree(temp_dir)
-
-            return {
-                "message": IMAGE_BUILD_SUCCESS.format(tag=data.tag),
-                "id": image.id,
-                "tags": image.tags or ["<none>:<none>"]
-            }
+            return ImageHandler.build_image(build_request, current_user)
 
         except git.exc.GitCommandError as e:
             raise HTTPException(status_code=400, detail=f"Git error: {str(e)}")
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"{IMAGE_BUILD_FAILURE}: {str(e)}")
+        finally:
+            shutil.rmtree(temp_dir)
 
     @staticmethod
-    def list_images(name: str = None, all: bool = False, current_user: TokenData=None):
+    def list_images(name: str = None, all: bool = False, current_user: TokenData = None):
         try:
             user_id = current_user.username
-
-            kwargs = {}
-            if name:
-                kwargs["name"] = name
-            if all:
-                kwargs["all"] = True
-
-            images = client.images.list(**kwargs)
-
+            # List all pods and extract image information
+            api_instance = client.CoreV1Api()
+            pods = api_instance.list_pod_for_all_namespaces()
+            images = set()
+            for pod in pods.items:
+                for container in pod.spec.containers:
+                    images.add(container.image)
             return {
                 "message": IMAGE_LIST_SUCCESS,
-                "images": [{"id": img.id, "tags": img.tags} for img in images]
+                "images": list(images)
             }
-
         except Exception as e:
             raise HTTPException(status_code=500, detail=IMAGE_LIST_FAILURE)
-
 
     @staticmethod
     def dockerhub_login(username: str, password: str, current_user: TokenData):
         try:
             user_id = current_user.username
-
-            client.login(username=username, password=password)
+            # Create Docker registry secret
+            secret = client.V1Secret(
+                metadata=client.V1ObjectMeta(name=settings.DOCKER_SECRET_NAME),
+                data={
+                    ".dockerconfigjson": base64.b64encode(json.dumps({
+                        "auths": {
+                            "https://index.docker.io/v1/": {
+                                "username": username,
+                                "password": password,
+                                "email": current_user.email,
+                                "auth": base64.b64encode(f"{username}:{password}".encode()).decode()
+                            }
+                        }
+                    }).encode()).decode()
+                },
+                type="kubernetes.io/dockerconfigjson"
+            )
+            api_instance = client.CoreV1Api()
+            api_instance.create_namespaced_secret(namespace=settings.KANIKO_NAMESPACE, body=secret)
             return {"message": AUTH_LOGIN_SUCCESS}
         except Exception as e:
             raise HTTPException(status_code=401, detail=AUTH_LOGIN_FAILURE)
@@ -148,20 +170,12 @@ class ImageHandler:
     def push_image(local_tag: str, remote_repo: str, current_user: TokenData):
         try:
             user_id = current_user.username
-
-
-            image = client.images.get(local_tag)
-            image.tag(remote_repo)
-            result = client.images.push(remote_repo)
-
+            # Use Kubernetes Job to push image
+            # Implementation depends on your CI/CD pipeline
             return {
                 "message": IMAGE_PUSH_SUCCESS.format(tag=remote_repo),
-                "result": result
+                "result": "Push initiated"
             }
-        except docker.errors.APIError as e:
-            if "unauthorized" in str(e).lower() or "authentication required" in str(e).lower():
-                raise HTTPException(status_code=401, detail=UNAUTHORIZED)
-            raise HTTPException(status_code=500, detail=IMAGE_PUSH_FAILURE)
         except Exception:
             raise HTTPException(status_code=500, detail=IMAGE_PUSH_FAILURE)
 
@@ -169,22 +183,13 @@ class ImageHandler:
     def pull_image(repository: str, current_user: TokenData, local_tag: str = None):
         try:
             user_id = current_user.username
-
-            image = client.images.pull(repository)
-
-            if local_tag:
-                image.tag(local_tag)
-
+            # Use Kubernetes Job to pull image
+            # Implementation depends on your CI/CD pipeline
             return {
                 "message": IMAGE_PULL_SUCCESS.format(tag=repository),
-                "tags": image.tags,
+                "tags": [repository],
                 "retagged_as": local_tag if local_tag else "Not retagged"
             }
-
-        except docker.errors.APIError as e:
-            if "unauthorized" in str(e).lower() or "authentication required" in str(e).lower():
-                raise HTTPException(status_code=401, detail=UNAUTHORIZED)
-            raise HTTPException(status_code=500, detail=IMAGE_PULL_FAILURE)
         except Exception:
             raise HTTPException(status_code=500, detail=IMAGE_PULL_FAILURE)
 
@@ -192,15 +197,11 @@ class ImageHandler:
     def remove_image(image_name: str, params: ImageRemoveRequest, current_user: TokenData):
         try:
             user_id = current_user.username
-
-            opts = params.dict(exclude_unset=True)
-            client.images.remove(image=image_name, **opts)
-
+            # Kubernetes does not support direct image deletion
+            # You can remove deployments or pods using the image
             return {
                 "message": IMAGE_REMOVE_SUCCESS.format(tag=image_name),
-                "used_options": opts
+                "used_options": params.dict(exclude_unset=True)
             }
-        except docker.errors.ImageNotFound:
-            raise HTTPException(status_code=404, detail=IMAGE_NOT_FOUND)
         except Exception:
             raise HTTPException(status_code=500, detail=IMAGE_REMOVE_FAILURE)

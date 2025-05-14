@@ -22,7 +22,7 @@ except:
     config.load_kube_config()
 
 apps_v1 = client.AppsV1Api()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="app1/auth/auth/login")
 
 
 def list_k8s_deployments(current_user: TokenData, namespace: str = "default"):

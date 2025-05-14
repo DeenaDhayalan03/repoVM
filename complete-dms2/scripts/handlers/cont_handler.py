@@ -39,7 +39,7 @@ except Exception as e:
     print("Docker is not reachable")
 mongo = MongoDBConnection()
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="app1/auth/auth/login")
 
 
 def run_container_advanced(data: ContainerRunAdvancedRequest, current_user: TokenData):

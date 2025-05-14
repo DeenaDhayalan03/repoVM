@@ -20,7 +20,7 @@ except Exception as e:
     print(e)
     print("Docker is not reachable")
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="app1/auth/auth/login")
 
 def create_volume_with_params(data: VolumeCreateRequest, current_user: TokenData):
     try:

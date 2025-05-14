@@ -54,7 +54,7 @@ def get_current_user_from_token(request: Request) -> TokenData:
 
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=UNAUTHORIZED)
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="app1/auth/auth/login")
 def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     print(token)
     user = decode_access_token(token)

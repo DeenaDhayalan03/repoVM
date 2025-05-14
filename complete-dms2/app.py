@@ -17,9 +17,10 @@ def create_app(root_path: str = "") -> FastAPI:
         title="Docker Management API",
         description="APIs to manage Docker Images, Containers, and Volumes",
         version="1.0.0",
+        swagger_ui_oauth2_redirect_url=f"{root_path}/docs/oauth2-redirect",
         root_path=root_path,
-        docs_url=None,  
-        redoc_url=None,
+        docs_url=None,
+        redoc_url=None
     )
 
     @app.get("/docs", include_in_schema=False)

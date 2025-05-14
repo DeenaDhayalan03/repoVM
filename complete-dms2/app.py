@@ -9,11 +9,12 @@ from scripts.services.rate_limit_service import rate_limit_router as rate_router
 from scripts.services.jwt_service import auth_router as auth_router
 
 
-def create_app() -> FastAPI:
+def create_app(root_path: str = "") -> FastAPI:
     app = FastAPI(
         title="Docker Management API",
         description="APIs to manage Docker Images, Containers, and Volumes",
         version="1.0.0",
+        root_path=root_path,
     )
 
     app.add_middleware(

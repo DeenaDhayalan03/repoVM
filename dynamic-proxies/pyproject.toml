@@ -1,0 +1,43 @@
+[tool.black]
+line-length = 120
+[tool.isort]
+profile = "black"
+[tool.ruff]
+select = [
+"E",  # pycodestyle errors
+"W",  # pycodestyle warnings
+"F",  # pyflakes
+# "I",  # isort
+"C",  # flake8-comprehensions
+"B",  # flake8-bugbear
+]
+ignore = [
+"E501",  # line too long, handled by black
+"B008",  # do not perform function calls in argument defaults
+"C901",  # too complex
+"E402",
+"B904",
+"B905",
+"B009",
+"C417"
+]
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.coverage.report]
+precision = 2
+fail_under = 0
+show_missing = true
+skip_covered = true
+exclude_lines = [
+    "pragma: no cover",
+    "pragma: nocover",
+    "if TYPE_CHECKING:",
+    "if typing.TYPE_CHECKING:",
+    "raise NotImplementedError"
+]
+
+[tool.coverage.run]
+omit=[
+    "*/tests/*"
+]

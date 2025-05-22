@@ -1,0 +1,28 @@
+deployment:
+  environmentVar:
+    # - name: ENV
+    #   value: "prod"
+    - name: MEMORY_LIMIT
+      value: "1Gi"
+    - name: CPU_LIMIT
+      value: "1000m"
+    # - name: ISTIO_GATEWAY
+    #   value: "istio-system/proxy-gateway"
+    # - name: NAMESPACE
+    #   value: "plugin-manager"
+    # - name: IMAGE_PULL_SECRET
+    #   value: "kl-azregistry"
+    # - name: "CLAIM_NAME"
+    #   value: "core-volumes-pvc"
+    # - name: "HOST"
+    #   value: "0.0.0.0"
+    # - name: PORT
+    #   value: "7212"
+    # - name: WORKERS
+    #   value: "4"
+    # - name: "KUBERNETES_LOG_LEVEL"
+    #   value: "ERROR"
+    - name: "SECRET_TYPE"
+      value: '["kubernetes.io/service-account-token", "kubernetes.io/dockerconfigjson"]'
+    - name: "TMPDIR"
+      value: "/code/temp/"

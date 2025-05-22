@@ -1,0 +1,9 @@
+k3s.yaml
+__pycache__/
+.env
+pipeline.py
+.vscode/
+*.xml
+*.idea
+.coverage
+.venv

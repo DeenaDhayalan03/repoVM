@@ -1,0 +1,149 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: plugin-state
+  namespace: ilens-core
+
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: deployment-and-istio-permissions
+rules:
+- apiGroups: ["apps", "extensions", "networking.istio.io", ""]
+  resources: ["secrets","deployments", "virtualservices", "services", "services/proxy","pods", "pods/log"]
+  verbs: ["create", "update", "get", "list", "delete", "patch"]
+
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: deployment-and-istio-permissions-binding
+subjects:
+- kind: ServiceAccount
+  name: plugin-state
+  namespace: ilens-core
+roleRef:
+  kind: ClusterRole
+  name: deployment-and-istio-permissions
+  apiGroup: rbac.authorization.k8s.io
+
+
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: deployment-and-istio-permissions
+  namespace: ilens-core
+rules:
+- apiGroups: ["apps", "extensions", "networking.istio.io", ""]
+  resources: ["secrets","deployments", "virtualservices", "services", "services/proxy", "pods", "pods/log"]
+  verbs: ["create", "update", "get", "list", "delete", "patch"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: deployment-and-istio-permissions-binding
+  namespace: ilens-core
+subjects:
+- kind: ServiceAccount
+  name: plugin-state
+  namespace: ilens-core
+
+roleRef:
+  kind: Role
+  name: deployment-and-istio-permissions
+  apiGroup: rbac.authorization.k8s.io
+
+---
+
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: proxy-gateway
+  namespace: istio-system
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: plugin-state
+  namespace: ilens-core
+spec:
+  selector:
+    matchLabels:
+      app: plugin-state
+  template:
+    metadata:
+      labels:
+        app: plugin-state
+    spec:
+      automountServiceAccountToken: false
+      serviceAccountName: plugin-state
+      containers:
+      - name: plugin-state
+        image: 192.168.3.152:5000/dynamic-proxy:v3.0.0
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 8000
+        env:
+        - name: ENV
+          value: "prod"
+        - name: MEMORY_LIMIT
+          value: "1Gi"
+        - name: CPU_LIMIT
+          value: "1000m"
+        # - name: MONGO_URI
+        #   valueFrom:
+        #     secretKeyRef:
+        #       name: mongo-uri
+        #       key: mongo-uri
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: plugin-state
+  namespace: ilens-core
+spec:
+  type: NodePort
+  selector:
+    app: plugin-state
+  ports:
+  - port: 8000
+    targetPort: 8000
+    nodePort: 31000
+
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: ext-authz-plugin
+spec:
+  selector:
+    matchLabels:
+      app: plugin-auth
+  action: CUSTOM
+  provider:
+    name: ext-authz-plugin
+  rules:
+  - to:
+    - operation:
+        paths: ["*"]

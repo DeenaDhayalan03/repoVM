@@ -1,0 +1,9 @@
+{
+  "name": "average-temperature-calculator",
+  "version": "1.0.0",
+  "description": "Calculates average temperature from input JSON config",
+  "entry_point": "plugin.py",
+  "type": "data-processor",
+  "author": "your-name",
+  "dependencies": ["python3", "json"]
+}

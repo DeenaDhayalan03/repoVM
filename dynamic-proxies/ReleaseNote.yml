@@ -1,0 +1,7 @@
+release_notes:
+    summary: minor configuration changes
+     
+    detailed_changes:
+      - the fallback value of istio-gateway is changed to proxy-gateway
+    
+    

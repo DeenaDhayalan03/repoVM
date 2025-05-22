@@ -1,0 +1,29 @@
+FROM {{ frontend_base_image }} AS frontend
+WORKDIR /code
+COPY frontend/package.json .
+RUN npm install
+COPY frontend/ .
+RUN node "node_modules/@angular/cli/bin/ng" build --configuration production --output-hashing all --output-path build
+
+
+FROM python:3.9.13-alpine3.16 as mkdocs_builder
+WORKDIR /code
+COPY user_manual/requirements.txt /code/requirements.txt
+RUN pip install --no-cache-dir --upgrade -r requirements.txt
+COPY user_manual/ /code/
+RUN mkdocs build --site-dir build
+
+
+FROM {{ backend_base_image }}
+ARG PIP_EXTRA_INDEX_VALUE
+ARG PIP_TRUSTED_HOST_VALUE
+ENV PIP_EXTRA_INDEX_URL $PIP_EXTRA_INDEX_VALUE
+ENV PIP_TRUSTED_HOST $PIP_TRUSTED_HOST_VALUE
+WORKDIR /code
+COPY backend/requirements.txt /code/requirements.txt
+RUN pip install --no-cache-dir --upgrade -r requirements.txt
+COPY backend/ /code/
+RUN rm -rf scripts/templates
+COPY --from=frontend /code/build/ /code/scripts/templates/
+COPY --from=mkdocs_builder /code/build/ /code/scripts/templates/docs/
+CMD ["python", "app.py"]

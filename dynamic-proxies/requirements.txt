@@ -1,0 +1,9 @@
+coverage==7.3.0
+fastapi[all]~=0.115.2
+kubernetes==26.1.0
+prometheus-fastapi-instrumentator==7.0.0
+pymongo==4.6.3
+pytest==7.4.2
+pytest-dotenv==0.5.2
+pytest-mock==3.12.0
+setuptools==70.0.0

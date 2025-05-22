@@ -1,0 +1,220 @@
+stages:
+  - code-quality
+  - auto-tagging
+  - validate
+  - scan
+  - deploy
+  - update
+  - previous-release-auto-tagging
+
+variables:
+  MYSQL_CONNECTION: "mysql -h $ILENS_MYSQL_HOST --port $ILENS_MYSQL_PORT -u $ILENS_MYSQL_USER -p$ILENS_MYSQL_PASSWORD "
+  HELM_CHART_CLONE_PATH: "/home/gitlab-runner/kubernetes/ilens/qa-helm-charts"
+  HELM_CHART: "$HELM_CHART_CLONE_PATH/$CI_PROJECT_NAME-$CI_JOB_ID/ilens-core/ilens-modules"
+  VAR_UPDATION_SCRIPT: /home/gitlab-runner/monitor/qa-helm-repo-update/execute.sh
+  AUTO_TAGGING_SCRIPT: /home/gitlab-runner/monitor/qa-helm-repo-update/autotagging.sh
+  K8_DEPLOYMENT_SCRIPT: /home/gitlab-runner/monitor/qa-helm-repo-update/k8-deployment.sh
+  STATUS_SCRIPT: /home/gitlab-runner/monitor/deployment-status.sh
+  PREVIOUS_RELEASE_AUTO_TAGGING_SCRIPT: /home/gitlab-runner/monitor/qa-helm-repo-update/previous-release-autotagging.sh
+  PRE_COMMIT: /home/gitlab-runner/monitor/pre-commit/lint.sh
+  QA_HELM_GIT_PATH: https://$GIT_USRNAME:$GIT_USRPASSWD@$HELM_GIT_URL
+  PREVIOUS_RELEASE_AUTO_TAGGING_SCRIPT: /home/gitlab-runner/monitor/qa-helm-repo-update/previous-release-autotagging.sh
+  VARIABLES_YML: variables.yml
+  TIMEOUT: 960s
+  DEPLOYMENT_YML: dynamic-proxies.yml
+  DEPLOYMENT_YML_220: dynamic-proxies
+
+
+before_script:
+  - val=`echo $($MYSQL_CONNECTION -e "SELECT COUNT(*) FROM $ILENS_VERSION_DB.$DB_TABLE WHERE category='Server' AND type='Service' AND os='docker' AND module_name='$CI_PROJECT_NAME' ") | cut -d " " -f2`
+  - if [ $val == 0 ]; then $MYSQL_CONNECTION -e "INSERT INTO $ILENS_VERSION_DB.$DB_TABLE values('Server','Service','$CI_PROJECT_NAME','docker', '2', '0', '0', '0')";fi
+  - QA=$($MYSQL_CONNECTION -N -e "SELECT qa FROM $ILENS_VERSION_DB.$DB_TABLE where module_name = '$CI_PROJECT_NAME' AND type = 'Service' AND category = 'Server' AND os = 'docker'")
+  - DEV=$($MYSQL_CONNECTION -N -e "SELECT dev FROM $ILENS_VERSION_DB.$DB_TABLE where module_name = '$CI_PROJECT_NAME' AND type = 'Service' AND category = 'Server' AND os = 'docker'")
+  - PROD=$($MYSQL_CONNECTION -N -e "SELECT prod FROM $ILENS_VERSION_DB.$DB_TABLE where module_name = '$CI_PROJECT_NAME' AND type = 'Service' AND category = 'Server' AND os = 'docker'")
+
+auto-tagging:
+  stage: auto-tagging
+  script:
+    - echo "Initializing auto-tagging..."
+    - >
+
+      if ! sh  $AUTO_TAGGING_SCRIPT ; then
+          echo "Error occured during auto-tagging...!"
+          exit 1
+       fi
+
+  only:
+    - master
+  tags:
+    - shell
+
+
+#~~~~~| Requirements.txt version check |~~~~~#
+package-version-check:
+  stage: validate
+  script:
+      - bash $PACKAGE_VERSION_CHECK
+  only:
+  - QA
+  - develop
+  tags:
+  - shell
+
+#~~~~~| Vulnerability Scanner |~~~~~#
+vulnerability-scanner:
+  stage: scan
+  script:
+      - bash $VULNERABILITY_CHECK_SCRIPT
+  only:
+  - QA
+  - develop
+  tags:
+  - shell
+
+#~~~~~| QA K8 |~~~~~#
+qa-k8-deployment:
+  stage: deploy
+  before_script:
+    - echo "Initializing the QA K8 deployment..."
+    - >
+      if ! sh  $VAR_UPDATION_SCRIPT ; then
+          echo "Error while updating the variables...."
+          exit 1
+      fi
+  script:
+    - >
+
+       if ! sh  $K8_DEPLOYMENT_SCRIPT ; then
+           echo "Error occured during QA K8 deployment...!"
+           exit 1
+       fi
+
+  after_script:
+    - rm -rf $HELM_CHART_CLONE_PATH/$CI_PROJECT_NAME-$CI_JOB_ID
+  only:
+  - QA
+  tags:
+  - shell
+
+tag-update-qa:
+  stage: update
+  script:
+     - DEV=0
+     - REGISTRY_URL=azacrknowledgelens.azurecr.io/knowledgelens/products/ilens/qa
+     - docker rmi --force $REGISTRY_URL/$CI_PROJECT_NAME:v$PROD.$QA.$DEV
+     - QA=`expr $QA + 1` && DEV=0
+     - $MYSQL_CONNECTION -e "INSERT INTO $ILENS_HISTORY_DB.$DB_TABLE values('$CI_JOB_ID','Server','Service', '$CI_PROJECT_NAME','docker', '$PROD.$QA.$DEV', '$CI_COMMIT_SHA', '$GITLAB_USER_NAME', '$CI_COMMIT_REF_NAME')"
+     - $MYSQL_CONNECTION -e "UPDATE $ILENS_VERSION_DB.$DB_TABLE SET prod='$PROD' ,qa='$QA', dev='$DEV' WHERE module_name = '$CI_PROJECT_NAME' AND type = 'Service' AND category = 'Server' AND os = 'docker'"
+  dependencies:
+    - qa-k8-deployment
+  only:
+  - QA
+  tags:
+  - shell
+
+#~~~~~| DEV 220 |~~~~~#
+dev-deployment-220:
+  stage: deploy
+  before_script:
+    - val=`echo $($MYSQL_CONNECTION -e "SELECT COUNT(*) FROM $ILENS_VERSION_DB.$DB_TABLE WHERE category='Server' AND type='Service' AND os='docker' AND module_name='$CI_PROJECT_NAME' ") | cut -d " " -f2`
+    - if [ $val == 0 ]; then $MYSQL_CONNECTION -e "INSERT INTO $ILENS_VERSION_DB.$DB_TABLE values('Server','Service','$CI_PROJECT_NAME','docker', '2', '0', '0', '0')";fi
+    - QA=$($MYSQL_CONNECTION -N -e "SELECT qa FROM $ILENS_VERSION_DB.$DB_TABLE where module_name = '$CI_PROJECT_NAME' AND type = 'Service' AND category = 'Server' AND os = 'docker'")
+    - DEV=$($MYSQL_CONNECTION -N -e "SELECT dev FROM $ILENS_VERSION_DB.$DB_TABLE where module_name = '$CI_PROJECT_NAME' AND type = 'Service' AND category = 'Server' AND os = 'docker'")
+    - PROD=$($MYSQL_CONNECTION -N -e "SELECT prod FROM $ILENS_VERSION_DB.$DB_TABLE where module_name = '$CI_PROJECT_NAME' AND type = 'Service' AND category = 'Server' AND os = 'docker'")
+  script:
+    - REGISTRY_URL=azacrknowledgelens.azurecr.io/knowledgelens/products/ilens/dev
+    - DEV=`expr $DEV + 1`
+    - IMAGE_URL=$REGISTRY_URL/$CI_PROJECT_NAME:v$PROD.$QA.$DEV
+    - echo $IMAGE_URL
+    - DOCKER_COMPOSE=/opt/services/compose/$CI_COMMIT_BRANCH/docker-compose.yml
+    - VARIABLE_ENV_FILE="dev-variables.env"
+    #- CONTAINER_NAME_1=($DEPLOYMENT_YML_220)
+    #- CONTAINER_NAME=(${CONTAINER_NAME_1[@]%.*})
+    - DEV_PROJECT_NAME=$(echo $CI_PROJECT_NAME | cut -f "1" -d ".")
+    - echo $DEV_PROJECT_NAME
+    - tar czvf $CI_PROJECT_NAME.tar.gz *
+    - echo "Deploying to the dev 220 server..."
+    - sshpass -p $OFC_PASSWD ssh $OFC_USERNAME@$OFC_HOSTNAME "mkdir -p /tmp/$CI_PROJECT_NAME/tar/"
+    - sshpass -p $OFC_PASSWD ssh $OFC_USERNAME@$OFC_HOSTNAME "mkdir -p /tmp/$CI_PROJECT_NAME/untar/"
+    - sshpass -p $OFC_PASSWD scp $CI_PROJECT_NAME.tar.gz $OFC_USERNAME@$OFC_HOSTNAME:/tmp/$CI_PROJECT_NAME/tar/
+    - sshpass -p $OFC_PASSWD ssh $OFC_USERNAME@$OFC_HOSTNAME "tar xzvf /tmp/$CI_PROJECT_NAME/tar/$CI_PROJECT_NAME.tar.gz -C /tmp/$CI_PROJECT_NAME/untar/"
+    - sshpass -p $OFC_PASSWD ssh $OFC_USERNAME@$OFC_HOSTNAME "docker build -t $IMAGE_URL /tmp/$CI_PROJECT_NAME/untar/."
+    - OLD_IMAGE=$(sshpass -p $OFC_PASSWD  ssh $OFC_USERNAME@$OFC_HOSTNAME "cat $DOCKER_COMPOSE | grep '&$DEV_PROJECT_NAME-image' | cut -f '3' -d ' ' ")
+    - echo "Current image":" $OLD_IMAGE"
+    - echo "New image":" $IMAGE_URL"
+    - sshpass -p $OFC_PASSWD scp $VARIABLE_ENV_FILE  $OFC_USERNAME@$OFC_HOSTNAME:/opt/services/compose/develop/variables_env/$DEV_PROJECT_NAME.env
+    - sshpass -p $OFC_PASSWD  ssh $OFC_USERNAME@$OFC_HOSTNAME "sed -i 's|'$OLD_IMAGE'|'$IMAGE_URL'|1' '$DOCKER_COMPOSE'"
+    - sshpass -p $OFC_PASSWD  ssh $OFC_USERNAME@$OFC_HOSTNAME "docker-compose -f $DOCKER_COMPOSE up -d ${DEPLOYMENT_YML_220[@]}"
+  after_script:
+    - sshpass -p $OFC_PASSWD ssh $OFC_USERNAME@$OFC_HOSTNAME "rm -rf /tmp/$CI_PROJECT_NAME"
+    - rm -f $CI_PROJECT_NAME.tar.gz
+    - val=`echo $($MYSQL_CONNECTION -e "SELECT COUNT(*) FROM $ILENS_VERSION_DB.$DB_TABLE WHERE category='Server' AND type='Service' AND os='docker' AND module_name='$CI_PROJECT_NAME' ") | cut -d " " -f2`
+    - if [ $val == 0 ]; then $MYSQL_CONNECTION -e "INSERT INTO $ILENS_VERSION_DB.$DB_TABLE values('Server','Service','$CI_PROJECT_NAME','docker', '2', '0', '0', '0')";fi
+    - QA=$($MYSQL_CONNECTION -N -e "SELECT qa FROM $ILENS_VERSION_DB.$DB_TABLE where module_name = '$CI_PROJECT_NAME' AND type = 'Service' AND category = 'Server' AND os = 'docker'")
+    - DEV=$($MYSQL_CONNECTION -N -e "SELECT dev FROM $ILENS_VERSION_DB.$DB_TABLE where module_name = '$CI_PROJECT_NAME' AND type = 'Service' AND category = 'Server' AND os = 'docker'")
+    - PROD=$($MYSQL_CONNECTION -N -e "SELECT prod FROM $ILENS_VERSION_DB.$DB_TABLE where module_name = '$CI_PROJECT_NAME' AND type = 'Service' AND category = 'Server' AND os = 'docker'")
+    - DEV=`expr $DEV + 1`
+    - $MYSQL_CONNECTION -e "INSERT INTO $ILENS_HISTORY_DB.$DB_TABLE values('$CI_JOB_ID','Server','Service', '$CI_PROJECT_NAME','docker', '$PROD.$QA.$DEV', '$CI_COMMIT_SHA', '$GITLAB_USER_NAME', '$CI_COMMIT_REF_NAME')"
+    - $MYSQL_CONNECTION -e "UPDATE $ILENS_VERSION_DB.$DB_TABLE SET prod='$PROD' ,qa='$QA', dev='$DEV' WHERE module_name = '$CI_PROJECT_NAME' AND type = 'Service' AND category = 'Server' AND os = 'docker'"
+  only:
+  - develop1
+  tags:
+  - shell
+
+
+
+#~~~~~| CODE QUALITY |~~~~~#
+sonarqube-status:
+  stage: code-quality
+  image: $SONAR_SCANNER_IMAGE
+  script:
+     - /opt/sonar-scanner/bin/sonar-scanner -Dsonar.projectKey=$CI_PROJECT_NAME -Dsonar.sources=. -Dsonar.host.url=$SONAR_HOST -Dsonar.login=bf76cf66e49d85cd3aa06a824bbdd4ecffd5e383
+     - sleep 5
+     - python3 /opt/code_quality_report/static_code_quality_report_csv_v2.py $CI_PROJECT_NAME $GITLAB_USER_EMAIL,$EMAIL_TO $EMAIL_FROM $EMAIL_PASSWD False admin $SONAR_PASSWD
+  only:
+      refs:
+          - merge_requests
+      variables:
+          - $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"
+          - $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "QA"
+          - $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"
+  tags:
+     - docker
+
+
+#~~~~~| CODE PRECOMMIT |~~~~~#
+pre-commit-status:
+ stage: code-quality
+ script:
+    - sh $PRE_COMMIT
+ only:
+     refs:
+         - merge_requests
+     variables:
+         - $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"
+         - $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "QA"
+         - $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"
+ tags:
+    - shell
+
+#~~~~~| PREVIOUS_RELEASE_AUTO_TAGGING |~~~~~#
+previous-release-auto-tagging:
+  stage: previous-release-auto-tagging
+  script:
+    - echo "Initializing previous-release-auto-tagging..."
+    - >
+
+      if [ "$PR_AUTO_TAGGING_PASS" = "$PASSWORD" ] ; then
+         echo "$PR_AUTO_TAGGING_PASS"
+         if ! sh  $PREVIOUS_RELEASE_AUTO_TAGGING_SCRIPT ; then
+             echo "Error occured during previous-release-auto-tagging...!"
+             exit 1
+         fi
+      else
+         echo " Incorrect Password !! Try Again..."
+      fi
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^patch\/.*$/ || $CI_COMMIT_BRANCH =~ /^feature\/.*$/'
+      if: '$CI_PIPELINE_SOURCE == "web"'
+  tags:
+    - shell

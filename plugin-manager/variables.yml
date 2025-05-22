@@ -1,0 +1,111 @@
+deployment:
+  environmentVar:
+    # - name: REDIS_USER_ROLE_DB
+    #   value: "21"
+    # - name: REDIS_LOGIN_DB
+    #   value: "9"
+    # - name: REDIS_PROJECT_DB
+    #   value: "18"
+    # - name: SERVICE_HOST
+    #   value: "0.0.0.0"
+    # - name: SERVICE_PORT
+    #   value: "6789"
+    - name: AZURE_CONTAINER_REGISTRY_URL
+      value: {{ AZURE_CONTAINER_REGISTRY_URL }}
+    - name: AZURE_REGISTRY_USERNAME
+      value: {{ AZURE_REGISTRY_USERNAME }}
+    - name: AZURE_REGISTRY_PASSWORD
+      value: {{ AZURE_REGISTRY_PASSWORD }}
+    # - name: DOCKER_HOST
+    #   value: "tcp://localhost:2375"
+    # - name: LOG_LEVEL
+    #   value: "INFO"
+    # - name: VULNERABILITY_SCAN
+    #   value: "true"
+    # - name: MEMORY_REQUEST_LOWER_BOUND
+    #   value: "0"
+    # - name: MEMORY_REQUEST_UPPER_BOUND
+    #   value: "16"
+    # - name: MEMORY_LIMIT_LOWER_BOUND
+    #   value: "0"
+    # - name: MEMORY_LIMIT_UPPER_BOUND
+    #   value: "16"
+    # - name: CPU_REQUEST_LOWER_BOUND
+    #   value: "0"
+    # - name: CPU_REQUEST_UPPER_BOUND
+    #   value: "8"
+    # - name: CPU_LIMIT_LOWER_BOUND
+    #   value: "0"
+    # - name: CPU_LIMIT_UPPER_BOUND
+    #   value: "8"
+    # - name: REPLICAS_LOWER_BOUND
+    #   value: "1"
+    # - name: REPLICAS_UPPER_BOUND
+    #   value: "5"
+    # - name: DOWNLOAD_IMAGE_ENABLED
+    #   value: "False"
+    # - name: FOLDER_MOUNT_PATH
+    #   value: "/code/temp"
+    # - name: SONARQUBE_URL
+    #   value: "sonarqube.unifytwin.com"
+    - name: PLUGIN_BUILD_ARGS
+      valueFrom:
+        secretKeyRef:
+          name: plugin-secrets
+          key: PLUGIN_BUILD_ARGS
+    - name: SONARQUBE_TOKEN
+      valueFrom:
+        secretKeyRef:
+          name: sonarqube-secret
+          key: SONARQUBE_TOKEN
+    - name: SONARQUBE_USER
+      valueFrom:
+        secretKeyRef:
+          name: sonarqube-secret
+          key: SONARQUBE_USER
+    - name: SONARQUBE_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: sonarqube-secret
+          key: SONARQUBE_PASSWORD
+    - name: COSIGN_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: plugin-secrets
+          key: COSIGN_PASSWORD
+    # - name: SIGNING_KEY_PATH
+    #   value: "/code/cosign/cosign.key"
+    # - name: VERIFY_PUB_PATH
+    #   value: "/code/cosign/cosign.pub"
+    # - name: ANTIVIRUS_SCAN
+    #   value: "true"
+    # - name: SONARQUBE_SCAN
+    #   value: "true"
+    # - name: CODE_SMELL_THRESHOLD
+    #   value: "100"
+    # - name: BUG_THRESHOLD
+    #   value: "0"
+    # - name: VULNERABILITY_THRESHOLD
+    #   value: "0"
+    # - name: CODE_SMELL_SEVERITY
+    #   value: "CRITICAL,BLOCKER"
+    # - name: BUG_SEVERITY
+    #   value: "CRITICAL,BLOCKER"
+    # - name: VULNERABILITY_SEVERITY
+    #   value: "CRITICAL,BLOCKER"
+    # - name: "KUBEFLOW_MULTI_USER"
+    #   value: "false"
+    - name: "TMPDIR"
+      value: "/code/temp/"
+    # - name: "MINIO_ENDPOINT"
+    #   value: "infra-minio.ilens-infra.svc.cluster.local:9000"
+    # - name: "MINIO_ACCESS_KEY"
+    #   value: "minio"
+    # - name: "MINIO_SECRET_KEY"
+    #   value: "minio123"
+    # - name: "MINIO_BUCKET_NAME"
+    #   value: "plugins"
+    # - name: "MINIO_SECURE"
+    #   value: "false"
+    # - name: IMAGE_PULL_SECRET
+    #   value: "kl-azregistry"

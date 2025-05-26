@@ -16,8 +16,8 @@ class _EnvConf(BaseSettings):
 
 
 class _Service(BaseSettings):
-    host: str = "127.0.0.1"
-    port: int = 8000
+    host: str = "0.0.0.0"
+    port: int = 7212
     workers: int = 4
     TEMP_PATH: pathlib.Path = pathlib.Path("/code/temp")
     TEMP_PATH.mkdir(parents=True, exist_ok=True)

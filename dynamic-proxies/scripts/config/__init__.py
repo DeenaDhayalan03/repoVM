@@ -8,7 +8,7 @@ load_dotenv()
 
 class _EnvConf(BaseSettings):
     env: str = "prod"
-    namespace: str = "plugin-manager"
+    namespace: str = "deenadhayalan"
     image_pull_secret: str = "kl-azregistry"
     host_path: str = "/data2/ut-k8volumes/core-volumes"
     claim_name: str = "core-volumes-pvc"

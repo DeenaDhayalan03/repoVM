@@ -147,7 +147,7 @@ def save_configurations(user_details: MetaInfoSchema, configuration_req: Configu
     APIEndPoints.plugin_deploy,
     dependencies=[Depends(RBAC(entity_name="developerPlugins", operation=["create", "edit"]))],
 )
-@validate_deco
+#@validate_deco
 def deploy_plugin(
     user_details: MetaInfoSchema,
     plugin_data: DeployPlugin,

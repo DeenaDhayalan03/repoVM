@@ -46,7 +46,7 @@ plugin_list_table_actions = {
         {"type": "pause", "icon_class": "ra-sm-pause", "tooltip": "Stop", "label": "Stop", "section": True},
         {
             "type": "register",
-            "icon_class": "ra-sm-build-and-deploy",
+            "icon_class":  "ra-sm-build-and-deploy",
             "tooltip": "Deploy",
             "label": "Deploy",
             "section": True,
@@ -111,7 +111,7 @@ plugin_code_scans_header_content = {
     },
 }
 
-plugin_registration_types = {
+plugin_registration_types: dict[str, str] = {
     "git": "Git/VCS",
     "docker": "Docker Image",
     "bundle": "Bundle Upload",

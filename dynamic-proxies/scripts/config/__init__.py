@@ -29,7 +29,7 @@ class _MongoDB(BaseSettings):
 
 
 class _IstioGateway(BaseSettings):
-    istio_gateway: str = "istio-system/proxy-gateway"
+    istio_gateway: str = "istio-system/fastapi-gateway"
 
 
 EnvConf = _EnvConf()

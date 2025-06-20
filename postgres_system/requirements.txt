@@ -1,0 +1,9 @@
+fastapi==0.111.0
+uvicorn==0.30.0
+pydantic-settings==2.1.0
+python-dotenv==1.0.1
+psycopg[binary]==3.1.18
+starlette==0.37.2
+pymongo[srv]==4.7.2
+redis[async]>=5.0.0
+
